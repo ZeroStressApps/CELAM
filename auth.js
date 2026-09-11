@@ -127,20 +127,22 @@ auth.onAuthStateChanged((user) => {
     setAuthMode(false);
   }
 });
-document.querySelectorAll(".toggle-password").forEach((button) => {
-  button.addEventListener("click", () => {
-    const input = document.getElementById(button.dataset.target);
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".toggle-password");
 
-    if (!input) return;
+  if (!button) return;
 
-    if (input.type === "password") {
-      input.type = "text";
-      button.textContent = "🙈";
-      button.setAttribute("aria-label", "Ocultar contraseña");
-    } else {
-      input.type = "password";
-      button.textContent = "👁️";
-      button.setAttribute("aria-label", "Mostrar contraseña");
-    }
-  });
+  const input = document.getElementById(button.dataset.target);
+
+  if (!input) return;
+
+  if (input.type === "password") {
+    input.type = "text";
+    button.textContent = "🙈";
+    button.setAttribute("aria-label", "Ocultar contraseña");
+  } else {
+    input.type = "password";
+    button.textContent = "👁️";
+    button.setAttribute("aria-label", "Mostrar contraseña");
+  }
 });
