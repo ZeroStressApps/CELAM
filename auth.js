@@ -135,6 +135,29 @@ function findFamilyMemberByEmail(email){
   ) || null;
 }
 
+function findFamilyMemberByName(name){
+  const normalized = String(name || "").trim().toLowerCase();
+  return (CELAM_DEFAULT_DATA.people || []).find(person =>
+    String(person.name || "").trim().toLowerCase() === normalized
+  ) || null;
+}
+
+function setCurrentUserContext(user, familyMember = null){
+  if(!user){
+    window.CELAM_CURRENT_USER = null;
+    return;
+  }
+
+  const member = familyMember || findFamilyMemberByEmail(user.email) || findFamilyMemberByName(user.displayName);
+
+  window.CELAM_CURRENT_USER = {
+    uid: user.uid,
+    email: user.email || "",
+    name: user.displayName || member?.name || "",
+    familyMember: member || null
+  };
+}
+
 function populateIdentityPeople(){
   if(!identityPerson) return;
 
@@ -174,7 +197,9 @@ async function ensureFamilyIdentity(user){
   if(!user) return;
 
   if(user.displayName){
+    const member = findFamilyMemberByName(user.displayName) || findFamilyMemberByEmail(user.email);
     if(currentUserName) currentUserName.textContent = user.displayName;
+    setCurrentUserContext(user, member);
     return;
   }
 
@@ -183,6 +208,7 @@ async function ensureFamilyIdentity(user){
   if(emailMatch){
     await firebase.auth().currentUser.updateProfile({displayName: emailMatch.name});
     if(currentUserName) currentUserName.textContent = emailMatch.name;
+    setCurrentUserContext(firebase.auth().currentUser, emailMatch);
     return;
   }
 
@@ -206,6 +232,7 @@ identityForm?.addEventListener("submit", async (event) => {
   try{
     await user.updateProfile({displayName:name});
     if(currentUserName) currentUserName.textContent = name;
+    setCurrentUserContext(firebase.auth().currentUser, person);
     if(identityDialog?.open) identityDialog.close();
   }catch(error){
     showAuthMessage(friendlyAuthError(error));
@@ -226,6 +253,7 @@ auth.onAuthStateChanged(async (user) => {
     if(authScreen) authScreen.hidden = false;
     if(userBar) userBar.hidden = true;
     if(currentUserName) currentUserName.textContent = "";
+    setCurrentUserContext(null);
     if(identityDialog?.open) identityDialog.close();
     setAuthMode(false);
   }
