@@ -1,6 +1,22 @@
-// Reglas orientativas para la colección users/{uid}.
-// No las publiques todavía sin revisarlas junto con las reglas de Firestore
-// que usaremos para recordatorios, retos y CELAM AVISA.
-//
-// La aplicación crea/lee únicamente el documento del usuario autenticado.
-// El rol administrador deberá gestionarse con reglas seguras, no desde el cliente.
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId} {
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.role == "usuario";
+
+      allow update, delete: if false;
+
+      match /reminders/{reminderId} {
+        allow read, create, update, delete: if request.auth != null
+          && request.auth.uid == userId;
+      }
+    }
+  }
+}

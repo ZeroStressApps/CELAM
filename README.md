@@ -52,3 +52,7 @@ Esta versión añade autenticación mediante Firebase Authentication (email y co
 La configuración de Firebase está en `auth.js`. Los recordatorios siguen en `localStorage`
 por ahora y no se modifican en esta fase. La siguiente fase migrará los recordatorios a Firestore
 manteniendo una migración segura de los datos existentes.
+
+
+## Recordatorios en Firestore
+Los recordatorios se sincronizan por UID en `users/{uid}/reminders`. Se mantiene una copia local de respaldo y la primera sincronización migra los recordatorios locales que aún no existan en Firestore.
