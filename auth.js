@@ -11,15 +11,11 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
 const authScreen = document.getElementById("authScreen");
-const loginForm = document.getElementById("loginForm");
-const registerForm = document.getElementById("registerForm");
+const authForm = document.getElementById("authForm");
 const authTitle = document.getElementById("authTitle");
 const authSubtitle = document.getElementById("authSubtitle");
 const authMessage = document.getElementById("authMessage");
-const toggleAuthMode = document.getElementById("toggleAuthMode");
-const logoutBtn = document.getElementById("logoutBtn");
-const userBar = document.getElementById("userBar");
-const userEmail = document.getElementById("userEmail");
+const authSubmit = document.getElementById("authSubmit");
 const forgotPassword = document.getElementById("forgotPassword");
 
 let registerMode = false;
@@ -32,17 +28,75 @@ function showAuthMessage(message, error = true){
 
 function setAuthMode(isRegister){
   registerMode = isRegister;
-  loginForm.hidden = isRegister;
-  registerForm.hidden = !isRegister;
+
+  document.querySelectorAll("[data-auth-tab]").forEach(button => {
+    button.classList.toggle("active", button.dataset.authTab === (isRegister ? "register" : "login"));
+  });
+
+  document.querySelectorAll(".register-only").forEach(element => {
+    element.classList.toggle("hidden", !isRegister);
+  });
+
+  authSubmit.textContent = isRegister ? "Crear cuenta" : "Entrar";
+  forgotPassword.classList.toggle("hidden", isRegister);
   authTitle.textContent = isRegister ? "Crear cuenta" : "Entrar en CELAM";
   authSubtitle.textContent = isRegister
     ? "Crea tu cuenta para usar CELAM desde tus dispositivos."
     : "Inicia sesión para acceder a tu calendario familiar.";
-  toggleAuthMode.textContent = isRegister
-    ? "¿Ya tienes cuenta? Entrar"
-    : "¿No tienes cuenta? Crear una";
+
+  const password = document.getElementById("authPassword");
+  password.autocomplete = isRegister ? "new-password" : "current-password";
+  password.value = "";
+
+  const password2 = document.getElementById("authPassword2");
+  password2.value = "";
   showAuthMessage("");
 }
+
+document.querySelectorAll("[data-auth-tab]").forEach(button => {
+  button.addEventListener("click", () => setAuthMode(button.dataset.authTab === "register"));
+});
+
+authForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  showAuthMessage("");
+
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+  const password2 = document.getElementById("authPassword2").value;
+
+  if(registerMode && password !== password2){
+    showAuthMessage("Las contraseñas no coinciden.");
+    return;
+  }
+
+  try{
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    if(registerMode){
+      await auth.createUserWithEmailAndPassword(email, password);
+    }else{
+      await auth.signInWithEmailAndPassword(email, password);
+    }
+  }catch(error){
+    showAuthMessage(friendlyAuthError(error));
+  }
+});
+
+forgotPassword?.addEventListener("click", async () => {
+  const email = document.getElementById("authEmail").value.trim();
+  if(!email){
+    showAuthMessage("Escribe primero tu email y después pulsa aquí.");
+    return;
+  }
+
+  try{
+    await auth.sendPasswordResetEmail(email);
+    showAuthMessage("Te hemos enviado un email para restablecer la contraseña.", false);
+  }catch(error){
+    showAuthMessage(friendlyAuthError(error));
+  }
+});
 
 function friendlyAuthError(error){
   const code = error?.code || "";
@@ -60,89 +114,27 @@ function friendlyAuthError(error){
   return messages[code] || "No se ha podido completar la operación. Inténtalo de nuevo.";
 }
 
-loginForm?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  showAuthMessage("");
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
-  try{
-    await auth.signInWithEmailAndPassword(email, password);
-  }catch(error){
-    showAuthMessage(friendlyAuthError(error));
-  }
-});
-
-registerForm?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  showAuthMessage("");
-  const email = document.getElementById("registerEmail").value.trim();
-  const password = document.getElementById("registerPassword").value;
-  const password2 = document.getElementById("registerPassword2").value;
-
-  if(password !== password2){
-    showAuthMessage("Las contraseñas no coinciden.");
-    return;
-  }
-
-  try{
-    await auth.createUserWithEmailAndPassword(email, password);
-  }catch(error){
-    showAuthMessage(friendlyAuthError(error));
-  }
-});
-
-forgotPassword?.addEventListener("click", async () => {
-  const email = document.getElementById("loginEmail").value.trim();
-  if(!email){
-    showAuthMessage("Escribe primero tu email y después pulsa aquí.");
-    return;
-  }
-  try{
-    await auth.sendPasswordResetEmail(email);
-    showAuthMessage("Te hemos enviado un email para restablecer la contraseña.", false);
-  }catch(error){
-    showAuthMessage(friendlyAuthError(error));
-  }
-});
-
-toggleAuthMode?.addEventListener("click", () => setAuthMode(!registerMode));
-
-logoutBtn?.addEventListener("click", async () => {
-  try{
-    await auth.signOut();
-  }catch(error){
-    showAuthMessage(friendlyAuthError(error));
-  }
-});
-
 auth.onAuthStateChanged((user) => {
-  console.log("AUTH INICIAL", user);
-console.log("BOTÓN REGISTRO", toggleAuthMode);
   if(user){
     if(authScreen) authScreen.hidden = true;
-    if(userBar) userBar.hidden = false;
-    if(userEmail) userEmail.textContent = user.email || "Sesión iniciada";
   }else{
     if(authScreen) authScreen.hidden = false;
-    if(userBar) userBar.hidden = true;
-    if(userEmail) userEmail.textContent = "";
     setAuthMode(false);
   }
 });
+
 document.addEventListener("click", (event) => {
   const button = event.target.closest(".toggle-password");
-
-  if (!button) return;
+  if(!button) return;
 
   const input = document.getElementById(button.dataset.target);
+  if(!input) return;
 
-  if (!input) return;
-
-  if (input.type === "password") {
+  if(input.type === "password"){
     input.type = "text";
     button.textContent = "🙈";
     button.setAttribute("aria-label", "Ocultar contraseña");
-  } else {
+  }else{
     input.type = "password";
     button.textContent = "👁️";
     button.setAttribute("aria-label", "Mostrar contraseña");

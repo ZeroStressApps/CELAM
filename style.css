@@ -147,6 +147,11 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 
 
 /* ===== ACCESO CELAM ===== */
+.auth-tabs{display:flex;gap:6px;background:#F7F5EE;padding:5px;border-radius:14px;margin:20px 0 18px;}
+.auth-tab{flex:1;border:0;background:transparent;color:var(--muted);padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer;}
+.auth-tab.active{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(68,77,71,.10);}
+.hidden{display:none !important;}
+
 .auth-screen{
   position:fixed;
   inset:0;

@@ -34,53 +34,46 @@
   <!-- Pantalla de acceso CELAM -->
   <section id="authScreen" class="auth-screen" aria-label="Acceso a CELAM">
     <div class="auth-card">
-   <div class="auth-header">
-  <img src="assets/celam-logo.png" alt="CELAM" class="auth-logo">
-  <span class="eyebrow">CLUB EXCLUSIVO DE LOCOS A MOGOLLÓN</span>
-</div>
+      <div class="auth-header">
+        <img src="assets/celam-logo.png" alt="CELAM" class="auth-logo">
+        <span class="eyebrow">CLUB EXCLUSIVO DE LOCOS A MOGOLLÓN</span>
+      </div>
+
       <h1 id="authTitle">Entrar en CELAM</h1>
       <p id="authSubtitle">Inicia sesión para acceder a tu calendario familiar.</p>
 
-      <form id="loginForm" class="auth-form">
-        <label>
-          Email
-          <input id="loginEmail" type="email" autocomplete="email" required>
-        </label>
-        <label>
-          Contraseña
-  <div class="password-wrap">
-  <input id="loginPassword" type="password" autocomplete="current-password" required>
-  <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Mostrar contraseña">👁️</button>
-</div>
-        </label>
-        <button type="submit" class="primary-button auth-submit">Entrar</button>
-        <button type="button" class="text-button" id="forgotPassword">He olvidado mi contraseña</button>
-      </form>
+      <div class="auth-tabs" role="tablist" aria-label="Acceso a CELAM">
+        <button type="button" class="auth-tab active" data-auth-tab="login">Entrar</button>
+        <button type="button" class="auth-tab" data-auth-tab="register">Crear cuenta</button>
+      </div>
 
-      <form id="registerForm" class="auth-form" hidden>
+      <form id="authForm" class="auth-form">
         <label>
           Email
-          <input id="registerEmail" type="email" autocomplete="email">
+          <input id="authEmail" type="email" autocomplete="email" required>
         </label>
+
         <label>
           Contraseña
-<div class="password-wrap">
-  <input id="registerPassword" type="password" autocomplete="new-password" minlength="6">
-  <button type="button" class="toggle-password" data-target="registerPassword" aria-label="Mostrar contraseña">👁️</button>
-</div>
-<div class="password-wrap">
-  <input id="registerPassword2" type="password" autocomplete="new-password" minlength="6">
-  <button type="button" class="toggle-password" data-target="registerPassword2" aria-label="Mostrar contraseña">👁️</button>
-</div>
-      
-        <button type="submit" class="primary-button auth-submit">Crear cuenta</button>
+          <div class="password-wrap">
+            <input id="authPassword" type="password" autocomplete="current-password" required minlength="6">
+            <button type="button" class="toggle-password" data-target="authPassword" aria-label="Mostrar contraseña">👁️</button>
+          </div>
+        </label>
+
+        <label class="register-only hidden">
+          Repite la contraseña
+          <div class="password-wrap">
+            <input id="authPassword2" type="password" autocomplete="new-password" minlength="6">
+            <button type="button" class="toggle-password" data-target="authPassword2" aria-label="Mostrar contraseña">👁️</button>
+          </div>
+        </label>
+
+        <button type="submit" class="primary-button auth-submit" id="authSubmit">Entrar</button>
+        <button type="button" class="text-button login-only" id="forgotPassword">He olvidado mi contraseña</button>
       </form>
 
       <p id="authMessage" class="auth-message" role="alert"></p>
-
-      <button type="button" class="auth-switch" id="toggleAuthMode">
-        ¿No tienes cuenta? Crear una
-      </button>
     </div>
   </section>
 
