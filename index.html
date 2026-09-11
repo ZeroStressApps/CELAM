@@ -21,8 +21,11 @@
     <img src="assets/celam-logo.png" alt="CELAM">
 <div class="brand-year" id="yearTitle">2026</div>
 </div>
-    <button type="button" id="logoutBtn" class="logout-button" hidden>Salir</button>
   </header>
+  <div id="userBar" class="user-bar" hidden>
+    <span id="currentUserName"></span>
+    <button type="button" id="logoutBtn" class="logout-button">Salir</button>
+  </div>
 <span id="themeTitle" hidden>Nuestro año juntos</span>
   <nav class="tabs" aria-label="Secciones">
     <button class="tab active" data-view="calendar">📅 Calendario</button>
@@ -179,6 +182,24 @@
     </section>
   </main>
 
+
+  <dialog id="identityDialog" class="identity-dialog">
+    <div class="dialog-header">
+      <div>
+        <span class="eyebrow">TU PERFIL EN CELAM</span>
+        <h2>¿Quién eres?</h2>
+      </div>
+    </div>
+    <p class="identity-intro">Selecciona tu nombre para que el resto de la familia sepa quién está escribiendo.</p>
+    <form id="identityForm">
+      <label>Tu nombre en CELAM
+        <select id="identityPerson" required></select>
+      </label>
+      <div class="dialog-actions">
+        <button type="submit" class="primary-button">Continuar</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="reminderDialog">
     <div class="dialog-header">

@@ -18,6 +18,11 @@ const authMessage = document.getElementById("authMessage");
 const authSubmit = document.getElementById("authSubmit");
 const forgotPassword = document.getElementById("forgotPassword");
 const logoutBtn = document.getElementById("logoutBtn");
+const userBar = document.getElementById("userBar");
+const currentUserName = document.getElementById("currentUserName");
+const identityDialog = document.getElementById("identityDialog");
+const identityForm = document.getElementById("identityForm");
+const identityPerson = document.getElementById("identityPerson");
 
 let registerMode = false;
 
@@ -123,13 +128,101 @@ function friendlyAuthError(error){
   return messages[code] || "No se ha podido completar la operación. Inténtalo de nuevo.";
 }
 
-auth.onAuthStateChanged((user) => {
+function findFamilyMemberByEmail(email){
+  const normalized = String(email || "").trim().toLowerCase();
+  return (CELAM_DEFAULT_DATA.people || []).find(person =>
+    String(person.email || "").trim().toLowerCase() === normalized
+  ) || null;
+}
+
+function populateIdentityPeople(){
+  if(!identityPerson) return;
+
+  const people = Array.isArray(CELAM_DEFAULT_DATA.people)
+    ? CELAM_DEFAULT_DATA.people
+    : [];
+
+  const nameCounts = people.reduce((counts, person) => {
+    const name = String(person.name || "").trim();
+    counts[name] = (counts[name] || 0) + 1;
+    return counts;
+  }, {});
+
+  identityPerson.innerHTML = people.map((person, index) => {
+    const name = String(person.name || "").trim();
+    const duplicate = nameCounts[name] > 1;
+    const extra = duplicate && person.address ? ` · ${String(person.address).split(",")[0]}` : "";
+    return `<option value="${index}">${escHtml(name + extra)}</option>`;
+  }).join("");
+}
+
+function escHtml(value=""){
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[char]));
+}
+
+function escAttr(value=""){
+  return escHtml(value);
+}
+
+async function ensureFamilyIdentity(user){
+  if(!user) return;
+
+  if(user.displayName){
+    if(currentUserName) currentUserName.textContent = user.displayName;
+    return;
+  }
+
+  const emailMatch = findFamilyMemberByEmail(user.email);
+
+  if(emailMatch){
+    await firebase.auth().currentUser.updateProfile({displayName: emailMatch.name});
+    if(currentUserName) currentUserName.textContent = emailMatch.name;
+    return;
+  }
+
+  populateIdentityPeople();
+
+  if(identityDialog && !identityDialog.open){
+    identityDialog.showModal();
+  }
+}
+
+identityForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const selectedIndex = Number(identityPerson?.value);
+  const person = Number.isInteger(selectedIndex) ? CELAM_DEFAULT_DATA.people?.[selectedIndex] : null;
+  const name = person?.name || "";
+  const user = auth.currentUser;
+
+  if(!user || !name) return;
+
+  try{
+    await user.updateProfile({displayName:name});
+    if(currentUserName) currentUserName.textContent = name;
+    if(identityDialog?.open) identityDialog.close();
+  }catch(error){
+    showAuthMessage(friendlyAuthError(error));
+  }
+});
+
+auth.onAuthStateChanged(async (user) => {
   if(user){
     if(authScreen) authScreen.hidden = true;
-    if(logoutBtn) logoutBtn.hidden = false;
+    if(userBar) userBar.hidden = false;
+
+    try{
+      await ensureFamilyIdentity(user);
+    }catch(error){
+      showAuthMessage(friendlyAuthError(error));
+    }
   }else{
     if(authScreen) authScreen.hidden = false;
-    if(logoutBtn) logoutBtn.hidden = true;
+    if(userBar) userBar.hidden = true;
+    if(currentUserName) currentUserName.textContent = "";
+    if(identityDialog?.open) identityDialog.close();
     setAuthMode(false);
   }
 });
