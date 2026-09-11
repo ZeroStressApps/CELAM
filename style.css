@@ -186,6 +186,9 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
   gap:13px;
   text-align:left;
 }
+.auth-form[hidden]{
+  display:none;
+}
 .auth-form label{
   display:grid;
   gap:6px;
