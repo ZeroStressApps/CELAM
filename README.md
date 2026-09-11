@@ -45,3 +45,10 @@ Enlaces de Agenda configurados para usar la dirección exacta como destino de Go
 
 ## v0.8.1
 Corrección de la separación entre datos oficiales y recordatorios personales. Los datos familiares se cargan directamente desde `data.js`; únicamente los recordatorios se guardan en `localStorage`.
+
+
+## Firebase
+Esta versión añade autenticación mediante Firebase Authentication (email y contraseña).
+La configuración de Firebase está en `auth.js`. Los recordatorios siguen en `localStorage`
+por ahora y no se modifican en esta fase. La siguiente fase migrará los recordatorios a Firestore
+manteniendo una migración segura de los datos existentes.

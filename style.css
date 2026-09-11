@@ -144,3 +144,121 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
     margin-bottom: 22px;
   }
 }
+
+
+/* ===== ACCESO CELAM ===== */
+.auth-screen{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:linear-gradient(135deg,#FFF8EC 0%,#F5E9FF 48%,#E8F5EE 100%);
+}
+.auth-screen[hidden]{display:none}
+.auth-card{
+  width:min(430px,100%);
+  padding:34px 30px;
+  border-radius:30px;
+  background:rgba(255,255,255,.94);
+  box-shadow:0 20px 60px rgba(68,77,71,.14);
+  text-align:center;
+}
+.auth-logo{
+  width:92px;
+  height:92px;
+  object-fit:cover;
+  border-radius:50%;
+  margin-bottom:14px;
+}
+.auth-card h1{
+  font-family:"Playfair Display",serif;
+  font-size:34px;
+  margin:8px 0 5px;
+}
+.auth-card > p{
+  color:var(--muted);
+  margin:0 0 22px;
+}
+.auth-form{
+  display:grid;
+  gap:13px;
+  text-align:left;
+}
+.auth-form label{
+  display:grid;
+  gap:6px;
+  font-weight:700;
+  font-size:13px;
+}
+.auth-form input{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 13px;
+  background:#fff;
+  color:var(--ink);
+  outline:none;
+}
+.auth-form input:focus{
+  border-color:var(--sage-dark);
+  box-shadow:0 0 0 3px rgba(168,203,183,.25);
+}
+.auth-submit{width:100%;margin-top:3px}
+.text-button,.auth-switch{
+  border:0;
+  background:transparent;
+  color:var(--sage-dark);
+  font-weight:700;
+  cursor:pointer;
+}
+.text-button{padding:6px}
+.auth-switch{margin-top:18px;font-size:13px}
+.auth-message{
+  min-height:20px;
+  margin:12px 0 0 !important;
+  font-size:13px;
+  font-weight:600;
+}
+.auth-message.error{color:#B04A45}
+.auth-message.success{color:#4D7A5E}
+.user-bar{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:10px;
+  margin:-4px 0 10px;
+  font-size:12px;
+  color:var(--muted);
+}
+.user-bar[hidden]{display:none}
+
+/* Mantenemos todayBtn porque app.js lo necesita, pero no lo mostramos. */
+#todayBtn{display:none}
+.topbar{
+  grid-template-columns:1fr;
+  min-height:110px;
+}
+.brand{gap:28px}
+.brand img{width:92px;height:92px}
+.brand-year{
+  font-family:"Playfair Display",serif;
+  font-size:76px;
+  line-height:1;
+  font-weight:700;
+  color:var(--ink);
+  letter-spacing:-3px;
+}
+
+@media(max-width:720px){
+  .auth-card{padding:28px 22px}
+  .auth-logo{width:78px;height:78px}
+  .auth-card h1{font-size:30px}
+  .brand{gap:18px}
+  .brand img{width:72px;height:72px}
+  .brand-year{font-size:58px}
+  .tabs{gap:4px;padding:5px}
+  .tab{font-size:13px;padding:12px 5px;min-height:52px}
+  .user-bar{justify-content:center}
+}
