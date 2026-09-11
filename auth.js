@@ -148,7 +148,11 @@ function populateIdentityPeople(){
     return counts;
   }, {});
 
-  identityPerson.innerHTML = people.map((person, index) => {
+  const eligiblePeople = people
+    .map((person, index) => ({ person, index }))
+    .filter(({ person }) => !/\\bcon\\s+dios\\b/i.test(String(person.address || "")));
+
+  identityPerson.innerHTML = eligiblePeople.map(({ person, index }) => {
     const name = String(person.name || "").trim();
     const duplicate = nameCounts[name] > 1;
     const extra = duplicate && person.address ? ` · ${String(person.address).split(",")[0]}` : "";
