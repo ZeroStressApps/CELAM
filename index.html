@@ -48,7 +48,10 @@
         </label>
         <label>
           Contraseña
-          <input id="loginPassword" type="password" autocomplete="current-password" required>
+  <div class="password-wrap">
+  <input id="loginPassword" type="password" autocomplete="current-password" required>
+  <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Mostrar contraseña">👁️</button>
+</div>
         </label>
         <button type="submit" class="primary-button auth-submit">Entrar</button>
         <button type="button" class="text-button" id="forgotPassword">He olvidado mi contraseña</button>
@@ -61,12 +64,15 @@
         </label>
         <label>
           Contraseña
-          <input id="registerPassword" type="password" autocomplete="new-password" minlength="6">
-        </label>
-        <label>
-          Repite la contraseña
-          <input id="registerPassword2" type="password" autocomplete="new-password" minlength="6">
-        </label>
+<div class="password-wrap">
+  <input id="registerPassword" type="password" autocomplete="new-password" minlength="6">
+  <button type="button" class="toggle-password" data-target="registerPassword" aria-label="Mostrar contraseña">👁️</button>
+</div>
+<div class="password-wrap">
+  <input id="registerPassword2" type="password" autocomplete="new-password" minlength="6">
+  <button type="button" class="toggle-password" data-target="registerPassword2" aria-label="Mostrar contraseña">👁️</button>
+</div>
+      
         <button type="submit" class="primary-button auth-submit">Crear cuenta</button>
       </form>
 
