@@ -1,5 +1,5 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyC9yTHWvFh2Qu5A-E8kpxMPw5UPZG7iI",
+  apiKey: "AIzaSyCYhTWwCvFh2Qua5A-E8kpxMPw5uPZG7iI",
   authDomain: "celam-5de2e.firebaseapp.com",
   projectId: "celam-5de2e",
   storageBucket: "celam-5de2e.firebasestorage.app",
