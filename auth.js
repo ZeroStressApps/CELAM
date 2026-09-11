@@ -173,7 +173,7 @@ function populateIdentityPeople(){
 
   const eligiblePeople = people
     .map((person, index) => ({ person, index }))
-    .filter(({ person }) => !/\\bcon\\s+dios\\b/i.test(String(person.address || "")));
+    .filter(({ person }) => !/\bcon\s+dios\b/i.test(String(person.address || "")));
 
   identityPerson.innerHTML = eligiblePeople.map(({ person, index }) => {
     const name = String(person.name || "").trim();

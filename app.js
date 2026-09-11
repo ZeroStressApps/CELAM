@@ -22,7 +22,7 @@ function saveReminders(){
 let data={
   year:Number(CELAM_DEFAULT_DATA.year)||2026,
   theme:CELAM_DEFAULT_DATA.theme||"Nuestro año juntos",
-  people:Array.isArray(CELAM_DEFAULT_DATA.people)?CELAM_DEFAULT_DATA.people:[],
+  people:Array.isArray(CELAM_DEFAULT_DATA.people)?CELAM_DEFAULT_DATA.people.map(p=>Object.freeze({...p})):[],
   reminders:loadReminders()
 };
 
