@@ -9,6 +9,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const db = firebase.firestore();
 
 const authScreen = document.getElementById("authScreen");
 const authForm = document.getElementById("authForm");
@@ -20,6 +21,14 @@ const forgotPassword = document.getElementById("forgotPassword");
 const logoutBtn = document.getElementById("logoutBtn");
 const userBar = document.getElementById("userBar");
 const currentUserName = document.getElementById("currentUserName");
+const currentUserRole = document.getElementById("currentUserRole");
+const profileBtn = document.getElementById("profileBtn");
+const profileDialog = document.getElementById("profileDialog");
+const closeProfileBtn = document.getElementById("closeProfileBtn");
+const profileName = document.getElementById("profileName");
+const profileEmail = document.getElementById("profileEmail");
+const profileRole = document.getElementById("profileRole");
+const profileUid = document.getElementById("profileUid");
 const identityDialog = document.getElementById("identityDialog");
 const identityForm = document.getElementById("identityForm");
 const identityPerson = document.getElementById("identityPerson");
@@ -142,21 +151,60 @@ function findFamilyMemberByName(name){
   ) || null;
 }
 
-function setCurrentUserContext(user, familyMember = null){
+function setCurrentUserContext(user, familyMember = null, role = "usuario"){
   if(!user){
     window.CELAM_CURRENT_USER = null;
+    if(currentUserRole) currentUserRole.textContent = "";
     return;
   }
 
   const member = familyMember || findFamilyMemberByEmail(user.email) || findFamilyMemberByName(user.displayName);
+  const safeRole = role === "administrador" ? "administrador" : "usuario";
 
   window.CELAM_CURRENT_USER = {
     uid: user.uid,
     email: user.email || "",
     name: user.displayName || member?.name || "",
-    familyMember: member || null
+    familyMember: member || null,
+    role: safeRole
   };
+
+  if(currentUserRole) currentUserRole.textContent = safeRole === "administrador" ? "Administrador" : "Usuario";
+  if(profileName) profileName.textContent = window.CELAM_CURRENT_USER.name || "—";
+  if(profileEmail) profileEmail.textContent = window.CELAM_CURRENT_USER.email || "—";
+  if(profileRole) profileRole.textContent = safeRole === "administrador" ? "Administrador" : "Usuario";
+  if(profileUid) profileUid.textContent = window.CELAM_CURRENT_USER.uid || "—";
 }
+
+async function loadUserProfile(user, familyMember = null){
+  const fallbackName = user.displayName || familyMember?.name || "";
+  const ref = db.collection("users").doc(user.uid);
+  const snap = await ref.get();
+  let role = "usuario";
+
+  if(snap.exists){
+    const saved = snap.data() || {};
+    role = saved.role === "administrador" ? "administrador" : "usuario";
+  }else{
+    await ref.set({
+      uid: user.uid,
+      email: user.email || "",
+      memberName: fallbackName,
+      role: "usuario",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  setCurrentUserContext(user, familyMember, role);
+}
+
+profileBtn?.addEventListener("click", () => {
+  if(profileDialog && !profileDialog.open) profileDialog.showModal();
+});
+closeProfileBtn?.addEventListener("click", () => {
+  if(profileDialog?.open) profileDialog.close();
+});
 
 function populateIdentityPeople(){
   if(!identityPerson) return;
@@ -199,7 +247,7 @@ async function ensureFamilyIdentity(user){
   if(user.displayName){
     const member = findFamilyMemberByName(user.displayName) || findFamilyMemberByEmail(user.email);
     if(currentUserName) currentUserName.textContent = user.displayName;
-    setCurrentUserContext(user, member);
+    await loadUserProfile(user, member);
     return;
   }
 
@@ -208,7 +256,7 @@ async function ensureFamilyIdentity(user){
   if(emailMatch){
     await firebase.auth().currentUser.updateProfile({displayName: emailMatch.name});
     if(currentUserName) currentUserName.textContent = emailMatch.name;
-    setCurrentUserContext(firebase.auth().currentUser, emailMatch);
+    await loadUserProfile(firebase.auth().currentUser, emailMatch);
     return;
   }
 
@@ -232,7 +280,7 @@ identityForm?.addEventListener("submit", async (event) => {
   try{
     await user.updateProfile({displayName:name});
     if(currentUserName) currentUserName.textContent = name;
-    setCurrentUserContext(firebase.auth().currentUser, person);
+    await loadUserProfile(firebase.auth().currentUser, person);
     if(identityDialog?.open) identityDialog.close();
   }catch(error){
     showAuthMessage(friendlyAuthError(error));
@@ -253,6 +301,7 @@ auth.onAuthStateChanged(async (user) => {
     if(authScreen) authScreen.hidden = false;
     if(userBar) userBar.hidden = true;
     if(currentUserName) currentUserName.textContent = "";
+    if(profileDialog?.open) profileDialog.close();
     setCurrentUserContext(null);
     if(identityDialog?.open) identityDialog.close();
     setAuthMode(false);

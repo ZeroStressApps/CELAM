@@ -1,0 +1,6 @@
+// Reglas orientativas para la colección users/{uid}.
+// No las publiques todavía sin revisarlas junto con las reglas de Firestore
+// que usaremos para recordatorios, retos y CELAM AVISA.
+//
+// La aplicación crea/lee únicamente el documento del usuario autenticado.
+// El rol administrador deberá gestionarse con reglas seguras, no desde el cliente.
