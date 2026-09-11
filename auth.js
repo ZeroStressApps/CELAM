@@ -117,13 +117,13 @@ logoutBtn?.addEventListener("click", async () => {
 
 auth.onAuthStateChanged((user) => {
   if(user){
-    authScreen.hidden = true;
-    userBar.hidden = false;
-    userEmail.textContent = user.email || "Sesión iniciada";
+    if(authScreen) authScreen.hidden = true;
+    if(userBar) userBar.hidden = false;
+    if(userEmail) userEmail.textContent = user.email || "Sesión iniciada";
   }else{
-    authScreen.hidden = false;
-    userBar.hidden = true;
-    userEmail.textContent = "";
+    if(authScreen) authScreen.hidden = false;
+    if(userBar) userBar.hidden = true;
+    if(userEmail) userEmail.textContent = "";
     setAuthMode(false);
   }
 });
