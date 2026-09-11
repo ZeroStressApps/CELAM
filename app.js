@@ -4,7 +4,6 @@ const POPUP_KEY="celam-shown-reminders-v1";
 let REMINDER_USER_UID="";
 let REMINDER_USER_NAME="";
 let EDITING_REMINDER_ID="";
-let REMINDER_SYNCING=false;
 
 function reminderStorageKey(){
   return REMINDER_USER_UID ? `${REMINDERS_KEY}:${REMINDER_USER_UID}` : null;
@@ -12,97 +11,34 @@ function reminderStorageKey(){
 function popupStorageKey(){
   return REMINDER_USER_UID ? `${POPUP_KEY}:${REMINDER_USER_UID}` : null;
 }
-function loadLocalRemindersForUser(uid){
-  if(!uid) return [];
-  try{
-    const raw=localStorage.getItem(`${REMINDERS_KEY}:${uid}`);
-    const parsed=JSON.parse(raw||"[]");
-    return Array.isArray(parsed)?parsed:[];
-  }catch(e){return []}
-}
-function saveLocalReminders(){
-  const key=reminderStorageKey();
-  if(!key) return;
-  try{localStorage.setItem(key,JSON.stringify(data.reminders));}catch(e){}
-}
-async function getCloudReminders(uid){
-  if(!uid || !window.firebase?.firestore) return null;
-  try{
-    const snap=await firebase.firestore()
-      .collection("users").doc(uid).collection("reminders").get();
-    return snap.docs.map(doc=>({id:doc.id,...(doc.data()||{})}));
-  }catch(error){
-    console.error("CELAM: no se pudieron leer los recordatorios de Firestore:",error);
-    return null;
-  }
-}
-async function writeCloudReminder(uid, reminder){
-  if(!uid || !window.firebase?.firestore) return false;
-  try{
-    const copy={...reminder};
-    delete copy.uid;
-    await firebase.firestore()
-      .collection("users").doc(uid).collection("reminders").doc(String(reminder.id)).set(copy,{merge:true});
-    return true;
-  }catch(error){
-    console.error("CELAM: no se pudo guardar el recordatorio en Firestore:",error);
-    return false;
-  }
-}
-async function deleteCloudReminder(uid, reminderId){
-  if(!uid || !window.firebase?.firestore) return false;
-  try{
-    await firebase.firestore()
-      .collection("users").doc(uid).collection("reminders").doc(String(reminderId)).delete();
-    return true;
-  }catch(error){
-    console.error("CELAM: no se pudo eliminar el recordatorio de Firestore:",error);
-    return false;
-  }
-}
-async function syncRemindersForUser(uid){
-  if(!uid) return;
-  REMINDER_SYNCING=true;
-  try{
-    const local=loadLocalRemindersForUser(uid);
-    const cloud=await getCloudReminders(uid);
-
-    if(cloud===null){
-      // Offline/rules problem: keep the local copy available.
-      data.reminders=local;
-      return;
-    }
-
-    const cloudById=new Map(cloud.map(r=>[String(r.id),r]));
-    const localById=new Map(local.map(r=>[String(r.id),r]));
-
-    // Migration: never delete cloud data. If a local reminder is missing in cloud,
-    // copy it to the cloud. This preserves reminders created before this migration.
-    for(const localReminder of local){
-      const id=String(localReminder.id);
-      if(!cloudById.has(id)){
-        await writeCloudReminder(uid,localReminder);
-        cloudById.set(id,localReminder);
-      }
-    }
-
-    data.reminders=Array.from(cloudById.values());
-    saveLocalReminders();
-  }finally{
-    REMINDER_SYNCING=false;
-    render();
-  }
-}
-async function setReminderUser(userOrUid, memberName=""){
-  const uid=typeof userOrUid==="string" ? userOrUid : (userOrUid?.uid||"");
-  REMINDER_USER_UID=uid;
-  REMINDER_USER_NAME=String(memberName||"");
+function setReminderUser(userOrUid, memberName=""){
+  const uid = typeof userOrUid === "string" ? userOrUid : (userOrUid?.uid || "");
+  REMINDER_USER_UID = uid;
+  REMINDER_USER_NAME = String(memberName || "");
   if(!uid){
     data.reminders=[];
     render();
     return;
   }
-  await syncRemindersForUser(uid);
+
+  const key = reminderStorageKey();
+  try{
+    let raw = localStorage.getItem(key);
+    // One-time, conservative migration of the old unscoped reminders to Laura S.
+    // only, because the existing legacy reminders were created in Laura's session.
+    if(!raw && REMINDER_USER_NAME.trim().toLowerCase() === "laura s."){
+      const legacy = localStorage.getItem(REMINDERS_KEY);
+      if(legacy){
+        localStorage.setItem(key, legacy);
+        raw = legacy;
+      }
+    }
+    const parsed = JSON.parse(raw || "[]");
+    data.reminders = Array.isArray(parsed) ? parsed : [];
+  }catch(e){
+    data.reminders=[];
+  }
+  render();
 }
 window.CELAM_SET_REMINDER_USER=setReminderUser;
 const $=s=>document.querySelector(s);
@@ -110,14 +46,23 @@ const $=s=>document.querySelector(s);
 function clone(o){return JSON.parse(JSON.stringify(o))}
 
 function loadReminders(){
-  return loadLocalRemindersForUser(REMINDER_USER_UID);
+  const key = reminderStorageKey();
+  if(!key) return [];
+  try{
+    const s=localStorage.getItem(key);
+    const parsed=JSON.parse(s||"[]");
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return []}
 }
+
 function saveReminders(){
-  saveLocalReminders();
+  const key=reminderStorageKey();
+  if(!key) return;
+  localStorage.setItem(key,JSON.stringify(data.reminders));
 }
 
 // Datos oficiales: siempre vienen de data.js.
-// Los recordatorios se guardan en Firestore y mantienen una copia local de respaldo.
+// Solo los recordatorios se guardan localmente en el dispositivo.
 let data={
   year:Number(CELAM_DEFAULT_DATA.year)||2026,
   theme:CELAM_DEFAULT_DATA.theme||"Nuestro año juntos",
@@ -386,15 +331,11 @@ function renderReminders(){
   });
   c.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{
     const r=rs[Number(b.dataset.done)],real=data.reminders.indexOf(r);
-    data.reminders[real].done=!data.reminders[real].done;
-    saveReminders();
-    writeCloudReminder(REMINDER_USER_UID,data.reminders[real]).then(()=>render());
+    data.reminders[real].done=!data.reminders[real].done;saveReminders();render();
   });
   c.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>{
     const r=rs[Number(b.dataset.delete)];
-    data.reminders.splice(data.reminders.indexOf(r),1);
-    saveReminders();
-    deleteCloudReminder(REMINDER_USER_UID,r.id).then(()=>render());
+    data.reminders.splice(data.reminders.indexOf(r),1);saveReminders();render();
   });
 }
 
@@ -498,15 +439,7 @@ $("#reminderForm")?.addEventListener("submit",e=>{
       title,date:d,time:$("#reminderTime").value,note:$("#reminderNote").value.trim(),done:false,type
     });
   }
-  const savedReminderId = EDITING_REMINDER_ID;
-  saveReminders();
-  const savedReminder = savedReminderId
-    ? data.reminders.find(x=>x.id===savedReminderId)
-    : data.reminders[data.reminders.length-1];
-  EDITING_REMINDER_ID="";
-  $("#reminderDialog").close();
-  render();
-  if(savedReminder) writeCloudReminder(REMINDER_USER_UID,savedReminder).then(()=>render());
+  saveReminders(); EDITING_REMINDER_ID=""; $("#reminderDialog").close(); render();
 });
 
 $("#notificationBtn")?.addEventListener("click",async()=>{

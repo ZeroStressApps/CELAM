@@ -218,182 +218,189 @@ function findFamilyMemberByName(name){
   ) || null;
 }
 
-function setCurrentUserContext(user, familyMember = null){
+
+function setCurrentUserContext(user, familyMember = null, role = "usuario"){
   if(!user){
     window.CELAM_CURRENT_USER = null;
+    window.CELAM_IS_ADMIN = false;
     return;
   }
+
+  const safeRole = role === "administrador" ? "administrador" : "usuario";
 
   window.CELAM_CURRENT_USER = {
     uid: user.uid,
     email: user.email || "",
     name: familyMember?.name || "",
-    familyMember: familyMember || null
+    familyMember: familyMember || null,
+    role: safeRole
   };
+
+  window.CELAM_IS_ADMIN = safeRole === "administrador";
 
   const nameEl = document.getElementById("currentUserName");
   if(nameEl) nameEl.textContent = familyMember?.name || "";
+}
+
+function findFamilyMemberByEmail(email){
+  const normalized = String(email || "").trim().toLowerCase();
+  return (CELAM_DEFAULT_DATA.people || []).find(person =>
+    String(person.email || "").trim().toLowerCase() === normalized
+  ) || null;
+}
+
+function findFamilyMemberByName(name){
+  const normalized = String(name || "").trim().toLowerCase();
+  return (CELAM_DEFAULT_DATA.people || []).find(person =>
+    String(person.name || "").trim().toLowerCase() === normalized
+  ) || null;
 }
 
 function populateIdentityPeople(){
   const select = document.getElementById("identityPerson");
   if(!select) return;
 
-  const people = Array.isArray(CELAM_DEFAULT_DATA.people)
-    ? CELAM_DEFAULT_DATA.people
-    : [];
-
+  const people = Array.isArray(CELAM_DEFAULT_DATA.people) ? CELAM_DEFAULT_DATA.people : [];
   const eligiblePeople = people
-    .map((person, index) => ({person, index}))
+    .map((person,index)=>({person,index}))
     .filter(({person}) => !/\bcon\s+dios\b/i.test(String(person.address || "")));
 
   const counts = {};
-  eligiblePeople.forEach(({person}) => {
-    const name = String(person.name || "").trim();
-    counts[name] = (counts[name] || 0) + 1;
+  eligiblePeople.forEach(({person})=>{
+    const name=String(person.name||"").trim();
+    counts[name]=(counts[name]||0)+1;
   });
 
-  select.innerHTML = eligiblePeople.map(({person, index}) => {
-    const name = String(person.name || "").trim();
-    const extra = counts[name] > 1 && person.address
-      ? ` · ${String(person.address).split(",")[0]}`
-      : "";
-    return `<option value="${index}">${escHtml(name + extra)}</option>`;
+  select.innerHTML=eligiblePeople.map(({person,index})=>{
+    const name=String(person.name||"").trim();
+    const extra=counts[name]>1 && person.address ? ` · ${String(person.address).split(",")[0]}` : "";
+    return `<option value="${index}">${escHtml(name+extra)}</option>`;
   }).join("");
 }
 
 async function getUserProfile(user){
   try{
-    const snap = await firebase.firestore()
-      .collection("users")
-      .doc(user.uid)
-      .get();
-
-    return snap.exists ? snap.data() : null;
+    const snap = await db.collection("users").doc(user.uid).get();
+    return snap.exists ? (snap.data() || null) : null;
   }catch(error){
-    console.error("No se pudo leer el perfil CELAM:", error);
+    console.error("CELAM: no se pudo leer el perfil:", error);
     return null;
   }
 }
 
-async function saveUserProfile(user, familyMember, role = "usuario"){
-  const profile = {
-    uid: user.uid,
-    email: user.email || "",
-    memberName: String(familyMember.name || "").trim(),
-    role,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
+async function createUserProfile(user, familyMember){
+  const memberName=String(familyMember?.name||"").trim();
+  if(!memberName) throw new Error("Miembro CELAM inválido.");
 
-  await firebase.firestore()
-    .collection("users")
-    .doc(user.uid)
-    .set({
-      ...profile,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, {merge:true});
+  const ref=db.collection("users").doc(user.uid);
+  await ref.set({
+    uid:user.uid,
+    email:user.email||"",
+    memberName,
+    role:"usuario",
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
 
-  setCurrentUserContext(user, familyMember);
-  return profile;
+  setCurrentUserContext(user,familyMember,"usuario");
 }
 
 async function ensureFamilyIdentity(user){
   if(!user) return null;
 
-  // 1. Firestore is the ONLY source of truth once a profile exists.
-  const profile = await getUserProfile(user);
+  // Firestore profile is the source of truth once it exists.
+  const profile=await getUserProfile(user);
 
   if(profile?.memberName){
-    const member = findFamilyMemberByName(profile.memberName);
-
+    const member=findFamilyMemberByName(profile.memberName);
     if(member){
-      setCurrentUserContext(user, member);
+      const role=profile.role==="administrador" ? "administrador" : "usuario";
+      setCurrentUserContext(user,member,role);
       return member;
     }
-
-    console.warn("El perfil de Firestore referencia un miembro que ya no existe en data.js:", profile.memberName);
+    console.warn("CELAM: el miembro del perfil no existe en data.js:",profile.memberName);
     return null;
   }
 
-  // 2. For a genuinely new account, email matching is allowed only against data.js.
-  //    Never use Firebase displayName to decide identity.
-  const byEmail = findFamilyMemberByEmail(user.email);
-
+  // For a new profile only, an exact email match in data.js is automatic.
+  const byEmail=findFamilyMemberByEmail(user.email);
   if(byEmail){
-    await saveUserProfile(user, byEmail, "usuario");
-    try{
-      await user.updateProfile({displayName: byEmail.name});
-    }catch(error){}
+    await createUserProfile(user,byEmail);
+    try{ await user.updateProfile({displayName:byEmail.name}); }catch(error){}
     return byEmail;
   }
 
-  // 3. Otherwise ask the user explicitly.
+  // Unknown email: require explicit identity selection.
   populateIdentityPeople();
-  const dialog = document.getElementById("identityDialog");
-  if(dialog && !dialog.open) dialog.showModal();
+  if(identityDialog && !identityDialog.open) identityDialog.showModal();
   return null;
 }
 
-document.addEventListener("DOMContentLoaded", ()=>{
-  const form = document.getElementById("identityForm");
-  const select = document.getElementById("identityPerson");
-  if(!form || !select) return;
+identityForm?.addEventListener("submit", async event=>{
+  event.preventDefault();
 
-  form.addEventListener("submit", async event=>{
-    event.preventDefault();
+  const user=auth.currentUser;
+  if(!user) return;
 
-    const selectedIndex = Number(select.value);
-    const person = Number.isInteger(selectedIndex)
-      ? CELAM_DEFAULT_DATA.people?.[selectedIndex]
-      : null;
-
-    if(!person) return;
-
-    const user = firebase.auth().currentUser;
-    if(!user) return;
-
-    try{
-      // Identity is saved only after the explicit user selection.
-      await saveUserProfile(user, person, "usuario");
-
-      try{
-        await user.updateProfile({displayName: person.name});
-      }catch(error){}
-
-      if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(user, person.name || "");
-      const dialog = document.getElementById("identityDialog");
-      if(dialog?.open) dialog.close();
-    }catch(error){
-      console.error("No se pudo guardar la identidad CELAM:", error);
-      const msg = document.getElementById("authMessage");
-      if(msg) msg.textContent = "No se ha podido guardar tu identidad. Inténtalo de nuevo.";
+  // Never overwrite an existing profile from the identity dialog.
+  // This prevents a user from changing memberName or role.
+  const existing=await getUserProfile(user);
+  if(existing?.memberName){
+    const member=findFamilyMemberByName(existing.memberName);
+    if(member){
+      setCurrentUserContext(user,member,existing.role==="administrador"?"administrador":"usuario");
+      if(identityDialog?.open) identityDialog.close();
     }
-  });
+    return;
+  }
+
+  const selectedIndex=Number(identityPerson?.value);
+  const person=Number.isInteger(selectedIndex) ? CELAM_DEFAULT_DATA.people?.[selectedIndex] : null;
+  if(!person?.name) return;
+
+  try{
+    await createUserProfile(user,person);
+    try{ await user.updateProfile({displayName:person.name}); }catch(error){}
+    if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(user,person.name||"");
+    if(identityDialog?.open) identityDialog.close();
+  }catch(error){
+    console.error("CELAM: no se pudo crear el perfil:",error);
+    showAuthMessage("No se ha podido guardar tu identidad. Inténtalo de nuevo.");
+  }
 });
 
-auth.onAuthStateChanged(async (user) => {
+
+auth.onAuthStateChanged(async (user)=>{
   if(user){
-    if(authScreen) authScreen.hidden = true;
-    if(userBar) userBar.hidden = false;
+    if(authScreen) authScreen.hidden=true;
+    if(userBar) userBar.hidden=false;
 
     try{
-      const member = await ensureFamilyIdentity(user);
-      if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(user, member?.name || window.CELAM_CURRENT_USER?.name || "");
+      const member=await ensureFamilyIdentity(user);
+      if(member){
+        if(window.CELAM_SET_REMINDER_USER) {
+          window.CELAM_SET_REMINDER_USER(user,member.name||"");
+        }
+      }else if(window.CELAM_CURRENT_USER?.familyMember){
+        if(window.CELAM_SET_REMINDER_USER) {
+          window.CELAM_SET_REMINDER_USER(user,window.CELAM_CURRENT_USER.familyMember.name||"");
+        }
+      }
     }catch(error){
-      console.error("CELAM: no se pudo completar la identidad:", error);
-      setCurrentUserContext(user, null, "usuario");
-      if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(user, window.CELAM_CURRENT_USER?.name || "");
-      if(identityDialog && !identityDialog.open) {
+      console.error("CELAM: error al cargar identidad/rol:",error);
+      // Authentication remains valid even if Firestore is temporarily unavailable.
+      // Only an account without a known profile needs the identity dialog.
+      if(!window.CELAM_CURRENT_USER?.familyMember && identityDialog && !identityDialog.open){
         populateIdentityPeople();
         identityDialog.showModal();
       }
     }
   }else{
-    if(authScreen) authScreen.hidden = false;
-    if(userBar) userBar.hidden = true;
-    if(currentUserName) currentUserName.textContent = "";
+    if(authScreen) authScreen.hidden=false;
+    if(userBar) userBar.hidden=true;
+    if(currentUserName) currentUserName.textContent="";
     setCurrentUserContext(null);
-    if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(null, "");
+    if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(null,"");
     if(identityDialog?.open) identityDialog.close();
     setAuthMode(false);
   }
