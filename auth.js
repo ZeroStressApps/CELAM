@@ -17,6 +17,7 @@ const authSubtitle = document.getElementById("authSubtitle");
 const authMessage = document.getElementById("authMessage");
 const authSubmit = document.getElementById("authSubmit");
 const forgotPassword = document.getElementById("forgotPassword");
+const logoutBtn = document.getElementById("logoutBtn");
 
 let registerMode = false;
 
@@ -98,6 +99,14 @@ forgotPassword?.addEventListener("click", async () => {
   }
 });
 
+logoutBtn?.addEventListener("click", async () => {
+  try{
+    await auth.signOut();
+  }catch(error){
+    showAuthMessage(friendlyAuthError(error));
+  }
+});
+
 function friendlyAuthError(error){
   const code = error?.code || "";
   const messages = {
@@ -109,19 +118,18 @@ function friendlyAuthError(error){
     "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
     "auth/too-many-requests": "Demasiados intentos. Espera un poco y vuelve a intentarlo.",
     "auth/network-request-failed": "No hay conexión con Firebase. Comprueba Internet.",
-    "auth/operation-not-allowed": "El acceso por email y contraseña no está habilitado en Firebase.",
-    "auth/api-key-not-valid": "La clave de API de Firebase no es válida.",
-"auth/app-not-authorized": "Esta aplicación no está autorizada en Firebase.",
-"auth/internal-error": "Firebase ha devuelto un error interno."
+    "auth/operation-not-allowed": "El acceso por email y contraseña no está habilitado en Firebase."
   };
-return messages[code] || `ERROR FIREBASE: ${code} | ${error?.message || "sin mensaje"}`;
+  return messages[code] || "No se ha podido completar la operación. Inténtalo de nuevo.";
 }
 
 auth.onAuthStateChanged((user) => {
   if(user){
     if(authScreen) authScreen.hidden = true;
+    if(logoutBtn) logoutBtn.hidden = false;
   }else{
     if(authScreen) authScreen.hidden = false;
+    if(logoutBtn) logoutBtn.hidden = true;
     setAuthMode(false);
   }
 });

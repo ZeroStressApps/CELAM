@@ -255,6 +255,22 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 }
 .user-bar[hidden]{display:none}
 
+/* Botón de cierre de sesión, visible solo cuando hay una sesión activa. */
+.topbar{position:relative}
+.logout-button{
+  position:absolute;
+  right:0;
+  top:8px;
+  border:0;
+  background:#F7F5EE;
+  color:var(--sage-dark);
+  padding:10px 15px;
+  border-radius:12px;
+  font-weight:700;
+  box-shadow:var(--shadow);
+}
+.logout-button:hover{background:#EFEADF}
+
 /* Mantenemos todayBtn porque app.js lo necesita, pero no lo mostramos. */
 #todayBtn{display:none}
 .topbar{
@@ -284,6 +300,13 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
   .user-bar{justify-content:center}
 }
 @media(max-width:720px){
+  .logout-button{
+    top:4px;
+    right:4px;
+    padding:8px 12px;
+    font-size:12px;
+  }
+
   .auth-header{
     gap:10px;
   }
