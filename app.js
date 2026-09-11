@@ -3,6 +3,7 @@ const REMINDERS_KEY="celam-personal-reminders-v1";
 const POPUP_KEY="celam-shown-reminders-v1";
 let REMINDER_USER_UID="";
 let REMINDER_USER_NAME="";
+let EDITING_REMINDER_ID="";
 
 function reminderStorageKey(){
   return REMINDER_USER_UID ? `${REMINDERS_KEY}:${REMINDER_USER_UID}` : null;
@@ -322,8 +323,12 @@ function renderReminders(){
   if(!rs.length){c.innerHTML=`<div class="empty">No tienes recordatorios todavía.</div>`;return}
   c.innerHTML=rs.map((r,i)=>`<article class="reminder-item ${r.done?"completed":""}">
     <div class="reminder-main"><div class="reminder-icon">🔔</div><div><strong>${esc(r.title)}</strong><span>${esc(r.date)}${r.time?" · "+esc(r.time):""}${r.note?" · "+esc(r.note):""}</span></div></div>
-    <div class="reminder-actions"><button class="done-btn" data-done="${i}" aria-label="Marcar completado">${r.done?"↩":"✓"}</button><button class="delete-btn" data-delete="${i}" aria-label="Eliminar">×</button></div>
+    <div class="reminder-actions"><button class="edit-btn" data-edit="${i}" aria-label="Modificar">✎</button><button class="done-btn" data-done="${i}" aria-label="Marcar completado">${r.done?"↩":"✓"}</button><button class="delete-btn" data-delete="${i}" aria-label="Eliminar">×</button></div>
   </article>`).join("");
+  c.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{
+    const r=rs[Number(b.dataset.edit)];
+    openReminder(r);
+  });
   c.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{
     const r=rs[Number(b.dataset.done)],real=data.reminders.indexOf(r);
     data.reminders[real].done=!data.reminders[real].done;saveReminders();render();
@@ -359,9 +364,26 @@ function updateReminderDate(){
   $("#reminderDate").value=dateKey(d.getFullYear(),d.getMonth()+1,d.getDate());
   $("#reminderPreview").textContent=`Se guardará para el próximo ${type==="birthday"?"cumpleaños":"santo"} de ${p.name}.`;
 }
-function openReminder(){
+function openReminder(reminder=null){
+  EDITING_REMINDER_ID = reminder?.id || "";
   $("#reminderForm").reset();
   populateReminderPeople();
+  if(reminder){
+    const personIndex=data.people.findIndex(p=>{
+      const expected=`${p.name} · ${reminder.type==="saint"?"santo":"cumpleaños"}`;
+      return expected===reminder.title;
+    });
+    if(personIndex>=0) $("#reminderPerson").value=String(personIndex);
+    if($("#reminderType")) $("#reminderType").value=reminder.type||"birthday";
+    if($("#reminderDate")) $("#reminderDate").value=reminder.date||"";
+    if($("#reminderTime")) $("#reminderTime").value=reminder.time||"";
+    if($("#reminderNote")) $("#reminderNote").value=reminder.note||"";
+    $("#reminderDialog h2").textContent="Modificar recordatorio";
+    $("#reminderForm button[type=submit]").textContent="Guardar cambios";
+  }else{
+    $("#reminderDialog h2").textContent="No olvidarlo";
+    $("#reminderForm button[type=submit]").textContent="Guardar recordatorio";
+  }
   $("#reminderDialog").showModal();
 }
 function checkDueReminders(){
@@ -401,15 +423,23 @@ $("#reminderPerson")?.addEventListener("change",updateReminderDate);
 $("#reminderType")?.addEventListener("change",updateReminderDate);
 $("#reminderForm")?.addEventListener("submit",e=>{
   e.preventDefault();
+  if(!REMINDER_USER_UID)return;
   const i=Number($("#reminderPerson").value),p=data.people[i],type=$("#reminderType").value;
   if(!p)return;
   const d=$("#reminderDate").value;
   const title=`${p.name} · ${type==="birthday"?"cumpleaños":"santo"}`;
-  data.reminders.push({
-    id:`${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    title,date:d,time:$("#reminderTime").value,note:$("#reminderNote").value.trim(),done:false
-  });
-  saveReminders();$("#reminderDialog").close();render();
+  if(EDITING_REMINDER_ID){
+    const r=data.reminders.find(x=>x.id===EDITING_REMINDER_ID);
+    if(r){
+      r.title=title; r.date=d; r.time=$("#reminderTime").value; r.note=$("#reminderNote").value.trim(); r.type=type;
+    }
+  }else{
+    data.reminders.push({
+      id:`${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      title,date:d,time:$("#reminderTime").value,note:$("#reminderNote").value.trim(),done:false,type
+    });
+  }
+  saveReminders(); EDITING_REMINDER_ID=""; $("#reminderDialog").close(); render();
 });
 
 $("#notificationBtn")?.addEventListener("click",async()=>{

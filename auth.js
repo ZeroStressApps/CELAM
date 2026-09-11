@@ -360,6 +360,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
         await user.updateProfile({displayName: person.name});
       }catch(error){}
 
+      if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(user, person.name || "");
       const dialog = document.getElementById("identityDialog");
       if(dialog?.open) dialog.close();
     }catch(error){
@@ -376,10 +377,12 @@ auth.onAuthStateChanged(async (user) => {
     if(userBar) userBar.hidden = false;
 
     try{
-      await ensureFamilyIdentity(user);
+      const member = await ensureFamilyIdentity(user);
+      if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(user, member?.name || window.CELAM_CURRENT_USER?.name || "");
     }catch(error){
       console.error("CELAM: no se pudo completar la identidad:", error);
       setCurrentUserContext(user, null, "usuario");
+      if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(user, window.CELAM_CURRENT_USER?.name || "");
       if(identityDialog && !identityDialog.open) {
         populateIdentityPeople();
         identityDialog.showModal();
@@ -390,6 +393,7 @@ auth.onAuthStateChanged(async (user) => {
     if(userBar) userBar.hidden = true;
     if(currentUserName) currentUserName.textContent = "";
     setCurrentUserContext(null);
+    if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(null, "");
     if(identityDialog?.open) identityDialog.close();
     setAuthMode(false);
   }
