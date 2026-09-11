@@ -293,11 +293,12 @@ function renderReminders(){
 
 function populateReminderPeople(){
   const select=$("#reminderPerson");if(!select)return;
+
   const orderedPeople=data.people
     .map((p,i)=>({p,i}))
     .sort((a,b)=>{
-      const aConDios=/\\bcon\\s+dios\\b/i.test(String(a.p.address||""));
-      const bConDios=/\\bcon\\s+dios\\b/i.test(String(b.p.address||""));
+      const aConDios=/\bcon\s+dios\b/i.test(String(a.p.address||""));
+      const bConDios=/\bcon\s+dios\b/i.test(String(b.p.address||""));
       return Number(aConDios)-Number(bConDios);
     });
 
