@@ -367,8 +367,11 @@ function updateReminderDate(){
 function openReminder(reminder=null){
   EDITING_REMINDER_ID = reminder?.id || "";
   $("#reminderForm").reset();
-  if(!reminder && $("#reminderType")) $("#reminderType").value="birthday";
   populateReminderPeople();
+  if(!reminder && $("#reminderType")){
+    $("#reminderType").value="birthday";
+    $("#reminderType").selectedIndex=0;
+  }
   if(reminder){
     const personIndex=data.people.findIndex(p=>{
       const expected=`${p.name} · ${reminder.type==="saint"?"santo":"cumpleaños"}`;
