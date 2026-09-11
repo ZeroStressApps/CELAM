@@ -293,3 +293,29 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
     font-size:10px;
   }
 }
+.password-wrap{
+  position:relative;
+  width:100%;
+}
+
+.password-wrap input{
+  padding-right:48px;
+}
+
+.toggle-password{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  border:0;
+  background:transparent;
+  padding:6px;
+  cursor:pointer;
+  font-size:18px;
+  line-height:1;
+  color:var(--muted);
+}
+
+.toggle-password:hover{
+  color:var(--ink);
+}
