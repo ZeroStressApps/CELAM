@@ -1,20 +1,63 @@
 const MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const REMINDERS_KEY="celam-personal-reminders-v1";
 const POPUP_KEY="celam-shown-reminders-v1";
+let REMINDER_USER_UID="";
+let REMINDER_USER_NAME="";
+
+function reminderStorageKey(){
+  return REMINDER_USER_UID ? `${REMINDERS_KEY}:${REMINDER_USER_UID}` : null;
+}
+function popupStorageKey(){
+  return REMINDER_USER_UID ? `${POPUP_KEY}:${REMINDER_USER_UID}` : null;
+}
+function setReminderUser(userOrUid, memberName=""){
+  const uid = typeof userOrUid === "string" ? userOrUid : (userOrUid?.uid || "");
+  REMINDER_USER_UID = uid;
+  REMINDER_USER_NAME = String(memberName || "");
+  if(!uid){
+    data.reminders=[];
+    render();
+    return;
+  }
+
+  const key = reminderStorageKey();
+  try{
+    let raw = localStorage.getItem(key);
+    // One-time, conservative migration of the old unscoped reminders to Laura S.
+    // only, because the existing legacy reminders were created in Laura's session.
+    if(!raw && REMINDER_USER_NAME.trim().toLowerCase() === "laura s."){
+      const legacy = localStorage.getItem(REMINDERS_KEY);
+      if(legacy){
+        localStorage.setItem(key, legacy);
+        raw = legacy;
+      }
+    }
+    const parsed = JSON.parse(raw || "[]");
+    data.reminders = Array.isArray(parsed) ? parsed : [];
+  }catch(e){
+    data.reminders=[];
+  }
+  render();
+}
+window.CELAM_SET_REMINDER_USER=setReminderUser;
 const $=s=>document.querySelector(s);
 
 function clone(o){return JSON.parse(JSON.stringify(o))}
 
 function loadReminders(){
+  const key = reminderStorageKey();
+  if(!key) return [];
   try{
-    const s=localStorage.getItem(REMINDERS_KEY);
+    const s=localStorage.getItem(key);
     const parsed=JSON.parse(s||"[]");
     return Array.isArray(parsed)?parsed:[];
   }catch(e){return []}
 }
 
 function saveReminders(){
-  localStorage.setItem(REMINDERS_KEY,JSON.stringify(data.reminders));
+  const key=reminderStorageKey();
+  if(!key) return;
+  localStorage.setItem(key,JSON.stringify(data.reminders));
 }
 
 // Datos oficiales: siempre vienen de data.js.
@@ -23,7 +66,7 @@ let data={
   year:Number(CELAM_DEFAULT_DATA.year)||2026,
   theme:CELAM_DEFAULT_DATA.theme||"Nuestro año juntos",
   people:Array.isArray(CELAM_DEFAULT_DATA.people)?CELAM_DEFAULT_DATA.people.map(p=>Object.freeze({...p})):[],
-  reminders:loadReminders()
+  reminders:[]
 };
 
 let viewDate=new Date(data.year,new Date().getMonth(),1);
@@ -323,12 +366,14 @@ function openReminder(){
 }
 function checkDueReminders(){
   const today=new Date(),key=dateKey(today.getFullYear(),today.getMonth()+1,today.getDate());
+  if(!REMINDER_USER_UID)return;
+  const popupKey=popupStorageKey();
   let shown=[];
-  try{shown=JSON.parse(localStorage.getItem(POPUP_KEY)||"[]")}catch(e){}
+  try{shown=JSON.parse(localStorage.getItem(popupKey)||"[]")}catch(e){}
   const due=data.reminders.filter(r=>!r.done&&r.date===key&&!shown.includes(r.id||`${r.title}-${r.date}`));
   if(!due.length)return;
   const r=due[0],id=r.id||`${r.title}-${r.date}`;
-  shown.push(id);localStorage.setItem(POPUP_KEY,JSON.stringify(shown.slice(-100)));
+  shown.push(id);localStorage.setItem(popupKey,JSON.stringify(shown.slice(-100)));
   $("#popupTitle").textContent="No te olvides de felicitar a...";
   $("#popupText").textContent=r.title;
   $("#birthdayPopup").showModal();

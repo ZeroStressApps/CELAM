@@ -21,6 +21,14 @@ const forgotPassword = document.getElementById("forgotPassword");
 const logoutBtn = document.getElementById("logoutBtn");
 const userBar = document.getElementById("userBar");
 const currentUserName = document.getElementById("currentUserName");
+const currentUserRole = document.getElementById("currentUserRole");
+const profileBtn = document.getElementById("profileBtn");
+const profileDialog = document.getElementById("profileDialog");
+const closeProfileBtn = document.getElementById("closeProfileBtn");
+const profileName = document.getElementById("profileName");
+const profileEmail = document.getElementById("profileEmail");
+const profileRole = document.getElementById("profileRole");
+const profileUid = document.getElementById("profileUid");
 const identityDialog = document.getElementById("identityDialog");
 const identityForm = document.getElementById("identityForm");
 const identityPerson = document.getElementById("identityPerson");
@@ -52,13 +60,11 @@ function setAuthMode(isRegister){
     : "Inicia sesión para acceder a tu calendario familiar.";
 
   const password = document.getElementById("authPassword");
-  if(password){
-    password.autocomplete = isRegister ? "new-password" : "current-password";
-    password.value = "";
-  }
+  password.autocomplete = isRegister ? "new-password" : "current-password";
+  password.value = "";
 
   const password2 = document.getElementById("authPassword2");
-  if(password2) password2.value = "";
+  password2.value = "";
   showAuthMessage("");
 }
 
@@ -72,7 +78,7 @@ authForm?.addEventListener("submit", async (event) => {
 
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
-  const password2 = document.getElementById("authPassword2")?.value || "";
+  const password2 = document.getElementById("authPassword2").value;
 
   if(registerMode && password !== password2){
     showAuthMessage("Las contraseñas no coinciden.");
@@ -131,11 +137,70 @@ function friendlyAuthError(error){
   return messages[code] || "No se ha podido completar la operación. Inténtalo de nuevo.";
 }
 
+
+
+
+
+
+
+
 function escHtml(value=""){
   return String(value).replace(/[&<>"']/g, char => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[char]));
 }
+
+function escAttr(value=""){
+  return escHtml(value);
+}
+
+
+identityForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const selectedIndex = Number(identityPerson?.value);
+  const person = Number.isInteger(selectedIndex) ? CELAM_DEFAULT_DATA.people?.[selectedIndex] : null;
+  const name = person?.name || "";
+  const user = auth.currentUser;
+
+  if(!user || !name) return;
+
+  try{
+    await user.updateProfile({displayName:name});
+    setCurrentUserContext(user, person, "usuario");
+
+    try{
+      const ref = db.collection("users").doc(user.uid);
+      const snap = await ref.get();
+      if(snap.exists){
+        const saved = snap.data() || {};
+        const role = saved.role === "administrador" ? "administrador" : "usuario";
+        await ref.update({
+          email:user.email || "",
+          memberName:name,
+          updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        setCurrentUserContext(user, person, role);
+      }else{
+        await ref.set({
+          uid:user.uid,
+          email:user.email || "",
+          memberName:name,
+          role:"usuario",
+          createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+    }catch(error){
+      console.error("No se pudo guardar el perfil CELAM en Firestore:", error);
+    }
+
+    if(identityDialog?.open) identityDialog.close();
+  }catch(error){
+    showAuthMessage(friendlyAuthError(error));
+  }
+});
+
 
 function findFamilyMemberByEmail(email){
   const normalized = String(email || "").trim().toLowerCase();
@@ -154,158 +219,146 @@ function findFamilyMemberByName(name){
 function setCurrentUserContext(user, familyMember = null, role = "usuario"){
   if(!user){
     window.CELAM_CURRENT_USER = null;
+    if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(null);
     return;
   }
-
   const member = familyMember || findFamilyMemberByEmail(user.email) || findFamilyMemberByName(user.displayName);
-
+  const name = user.displayName || member?.name || "";
   window.CELAM_CURRENT_USER = {
     uid: user.uid,
     email: user.email || "",
-    name: user.displayName || member?.name || "",
-    familyMember: member || null,
-    role: role === "administrador" ? "administrador" : "usuario"
+    name,
+    role: role === "administrador" ? "administrador" : "usuario",
+    familyMember: member || null
   };
+  if(currentUserName) currentUserName.textContent = name;
+  if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(user.uid, name);
+}
+
+
+async function loadUserProfile(user, familyMember = null){
+  const fallbackName = user.displayName || familyMember?.name || "";
+  try{
+    const ref = db.collection("users").doc(user.uid);
+    const snap = await ref.get();
+
+    if(snap.exists){
+      const saved = snap.data() || {};
+      const member = familyMember || findFamilyMemberByName(saved.memberName) || findFamilyMemberByEmail(saved.email);
+      const role = saved.role === "administrador" ? "administrador" : "usuario";
+      setCurrentUserContext(user, member, role);
+      return {member, role};
+    }
+
+    // New profile: only the user can create their own document and the
+    // security rules force the initial role to "usuario".
+    await ref.set({
+      uid: user.uid,
+      email: user.email || "",
+      memberName: fallbackName,
+      role: "usuario",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    setCurrentUserContext(user, familyMember, "usuario");
+    return {member: familyMember, role: "usuario"};
+  }catch(error){
+    // Firestore must never prevent Authentication from completing.
+    console.error("CELAM Firestore profile:", error);
+    setCurrentUserContext(user, familyMember, "usuario");
+    return {member: familyMember, role: "usuario"};
+  }
 }
 
 function populateIdentityPeople(){
-  const select = identityPerson;
+  const select = document.getElementById("identityPerson");
   if(!select) return;
-
   const people = Array.isArray(CELAM_DEFAULT_DATA.people) ? CELAM_DEFAULT_DATA.people : [];
-
   const eligiblePeople = people
     .map((person, index) => ({person, index}))
     .filter(({person}) => !/\bcon\s+dios\b/i.test(String(person.address || "")));
 
-  const nameCounts = {};
+  const counts = {};
   eligiblePeople.forEach(({person}) => {
     const name = String(person.name || "").trim();
-    nameCounts[name] = (nameCounts[name] || 0) + 1;
+    counts[name] = (counts[name] || 0) + 1;
   });
 
   select.innerHTML = eligiblePeople.map(({person, index}) => {
     const name = String(person.name || "").trim();
-    const duplicate = nameCounts[name] > 1;
-    const extra = duplicate && person.address
-      ? ` · ${String(person.address).split(",")[0]}`
-      : "";
-
+    const duplicate = counts[name] > 1;
+    const extra = duplicate && person.address ? ` · ${String(person.address).split(",")[0]}` : "";
     return `<option value="${index}">${escHtml(name + extra)}</option>`;
   }).join("");
-}
-
-async function loadUserProfile(user, familyMember = null){
-  if(!user) return null;
-
-  const ref = db.collection("users").doc(user.uid);
-  const snap = await ref.get();
-
-  if(snap.exists){
-    const saved = snap.data() || {};
-    const savedMember = familyMember || findFamilyMemberByName(saved.memberName) || findFamilyMemberByEmail(saved.email);
-    const role = saved.role === "administrador" ? "administrador" : "usuario";
-
-    setCurrentUserContext(user, savedMember, role);
-
-    if(currentUserName){
-      currentUserName.textContent = savedMember?.name || user.displayName || "";
-    }
-
-    return saved;
-  }
-
-  // Un perfil nuevo siempre nace como usuario.
-  const memberName = familyMember?.name || user.displayName || "";
-  const profile = {
-    uid: user.uid,
-    email: user.email || "",
-    memberName,
-    role: "usuario",
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-
-  await ref.set(profile);
-
-  setCurrentUserContext(user, familyMember, "usuario");
-
-  if(currentUserName){
-    currentUserName.textContent = memberName;
-  }
-
-  return profile;
 }
 
 async function ensureFamilyIdentity(user){
   if(!user) return null;
 
-  // Primero comprobamos Firestore. Si ya existe el perfil, esa es nuestra fuente
-  // persistente para saber quién es el usuario.
-  const ref = db.collection("users").doc(user.uid);
-  const snap = await ref.get();
-
-  if(snap.exists){
-    const saved = snap.data() || {};
-    const member =
-      findFamilyMemberByName(saved.memberName) ||
-      findFamilyMemberByEmail(saved.email) ||
-      findFamilyMemberByName(user.displayName);
-
-    if(member){
-      setCurrentUserContext(user, member, saved.role);
-      if(currentUserName) currentUserName.textContent = member.name;
-      return member;
+  // First try the persistent CELAM profile in Firestore.
+  try{
+    const snap = await db.collection("users").doc(user.uid).get();
+    if(snap.exists){
+      const saved = snap.data() || {};
+      const savedName = String(saved.memberName || "").trim();
+      const member = findFamilyMemberByName(savedName) || findFamilyMemberByEmail(saved.email) || findFamilyMemberByName(user.displayName);
+      if(member){
+        if(user.displayName !== member.name){
+          try{ await user.updateProfile({displayName:member.name}); }catch(e){}
+        }
+        await loadUserProfile(user, member);
+        return member;
+      }
     }
+  }catch(error){
+    console.warn("No se pudo leer el perfil CELAM de Firestore:", error);
   }
 
-  // Si Firebase Auth ya conoce el nombre, lo usamos y creamos/completamos el perfil.
-  const byEmail = findFamilyMemberByEmail(user.email);
   const byName = findFamilyMemberByName(user.displayName);
-  const knownMember = byEmail || byName;
+  if(byName){
+    await loadUserProfile(user, byName);
+    return byName;
+  }
 
-  if(knownMember){
-    if(user.displayName !== knownMember.name){
-      try{
-        await user.updateProfile({displayName: knownMember.name});
-      }catch(error){}
+  const byEmail = findFamilyMemberByEmail(user.email);
+  if(byEmail){
+    if(user.displayName !== byEmail.name){
+      try{ await user.updateProfile({displayName:byEmail.name}); }catch(e){}
     }
-
-    await loadUserProfile(firebase.auth().currentUser, knownMember);
-    return knownMember;
+    await loadUserProfile(user, byEmail);
+    return byEmail;
   }
 
-  // Cuenta nueva sin identidad: obligamos a elegir de la lista.
   populateIdentityPeople();
-
-  if(identityDialog && !identityDialog.open){
-    identityDialog.showModal();
-  }
-
+  if(identityDialog && !identityDialog.open) identityDialog.showModal();
   return null;
 }
 
-identityForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
+document.addEventListener("DOMContentLoaded", ()=>{
+  const form = document.getElementById("identityForm");
+  const select = document.getElementById("identityPerson");
+  if(!form || !select) return;
 
-  const selectedIndex = Number(identityPerson?.value);
-  const person = Number.isInteger(selectedIndex)
-    ? CELAM_DEFAULT_DATA.people?.[selectedIndex]
-    : null;
+  form.addEventListener("submit", async (event)=>{
+    event.preventDefault();
+    const selectedIndex = Number(select.value);
+    const person = Number.isInteger(selectedIndex) ? CELAM_DEFAULT_DATA.people?.[selectedIndex] : null;
+    if(!person) return;
 
-  const user = auth.currentUser;
+    const user = firebase.auth().currentUser;
+    if(!user) return;
 
-  if(!user || !person?.name) return;
-
-  try{
-    await user.updateProfile({displayName: String(person.name).trim()});
-    await loadUserProfile(firebase.auth().currentUser, person);
-
-    if(identityDialog?.open) identityDialog.close();
-  }catch(error){
-    console.error("No se pudo guardar la identidad CELAM:", error);
-    showAuthMessage(friendlyAuthError(error));
-  }
+    try{
+      await user.updateProfile({displayName: String(person.name || "").trim()});
+      setCurrentUserContext(firebase.auth().currentUser, person);
+      const nameEl = document.getElementById("currentUserName");
+      if(nameEl) nameEl.textContent = person.name || "";
+      const dialog = document.getElementById("identityDialog");
+      if(dialog?.open) dialog.close();
+    }catch(error){
+      console.error("No se pudo guardar la identidad CELAM:", error);
+    }
+  });
 });
 
 auth.onAuthStateChanged(async (user) => {
@@ -316,8 +369,12 @@ auth.onAuthStateChanged(async (user) => {
     try{
       await ensureFamilyIdentity(user);
     }catch(error){
-      console.error("Error al cargar el perfil CELAM:", error);
-      showAuthMessage("No se ha podido cargar tu perfil. Comprueba la conexión e inténtalo de nuevo.");
+      console.error("CELAM: no se pudo completar la identidad:", error);
+      setCurrentUserContext(user, null, "usuario");
+      if(identityDialog && !identityDialog.open) {
+        populateIdentityPeople();
+        identityDialog.showModal();
+      }
     }
   }else{
     if(authScreen) authScreen.hidden = false;

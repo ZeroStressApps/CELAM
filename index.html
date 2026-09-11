@@ -24,6 +24,7 @@
 </div>
   </header>
   <div id="userBar" class="user-bar" hidden>
+    <span id="currentUserName" aria-live="polite"></span>
     <button type="button" id="logoutBtn" class="logout-button">Salir</button>
   </div>
 <span id="themeTitle" hidden>Nuestro año juntos</span>
@@ -181,7 +182,27 @@
       </div>
     </section>
   </main>
-<dialog id="identityDialog" class="identity-dialog">
+
+
+  <dialog id="profileDialog" class="identity-dialog profile-dialog">
+    <div class="dialog-header">
+      <div>
+        <span class="eyebrow">TU PERFIL EN CELAM</span>
+        <h2>Mi perfil</h2>
+      </div>
+    </div>
+    <div class="profile-details">
+      <div><span>Nombre</span><strong id="profileName">—</strong></div>
+      <div><span>Email</span><strong id="profileEmail">—</strong></div>
+      <div><span>Rol</span><strong id="profileRole">Usuario</strong></div>
+      <div><span>UID</span><code id="profileUid">—</code></div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="primary-button" id="closeProfileBtn">Cerrar</button>
+    </div>
+  </dialog>
+
+  <dialog id="identityDialog" class="identity-dialog">
     <div class="dialog-header">
       <div>
         <span class="eyebrow">TU PERFIL EN CELAM</span>
