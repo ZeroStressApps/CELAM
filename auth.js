@@ -137,44 +137,8 @@ function friendlyAuthError(error){
   return messages[code] || "No se ha podido completar la operación. Inténtalo de nuevo.";
 }
 
-function findFamilyMemberByEmail(email){
-  const normalized = String(email || "").trim().toLowerCase();
-  return (CELAM_DEFAULT_DATA.people || []).find(person =>
-    String(person.email || "").trim().toLowerCase() === normalized
-  ) || null;
-}
 
-function findFamilyMemberByName(name){
-  const normalized = String(name || "").trim().toLowerCase();
-  return (CELAM_DEFAULT_DATA.people || []).find(person =>
-    String(person.name || "").trim().toLowerCase() === normalized
-  ) || null;
-}
 
-function setCurrentUserContext(user, familyMember = null, role = "usuario"){
-  if(!user){
-    window.CELAM_CURRENT_USER = null;
-    if(currentUserRole) currentUserRole.textContent = "";
-    return;
-  }
-
-  const member = familyMember || findFamilyMemberByEmail(user.email) || findFamilyMemberByName(user.displayName);
-  const safeRole = role === "administrador" ? "administrador" : "usuario";
-
-  window.CELAM_CURRENT_USER = {
-    uid: user.uid,
-    email: user.email || "",
-    name: user.displayName || member?.name || "",
-    familyMember: member || null,
-    role: safeRole
-  };
-
-  if(currentUserRole) currentUserRole.textContent = safeRole === "administrador" ? "Administrador" : "Usuario";
-  if(profileName) profileName.textContent = window.CELAM_CURRENT_USER.name || "—";
-  if(profileEmail) profileEmail.textContent = window.CELAM_CURRENT_USER.email || "—";
-  if(profileRole) profileRole.textContent = safeRole === "administrador" ? "Administrador" : "Usuario";
-  if(profileUid) profileUid.textContent = window.CELAM_CURRENT_USER.uid || "—";
-}
 
 async function loadUserProfile(user, familyMember = null){
   const fallbackName = user.displayName || familyMember?.name || "";
@@ -206,30 +170,6 @@ closeProfileBtn?.addEventListener("click", () => {
   if(profileDialog?.open) profileDialog.close();
 });
 
-function populateIdentityPeople(){
-  if(!identityPerson) return;
-
-  const people = Array.isArray(CELAM_DEFAULT_DATA.people)
-    ? CELAM_DEFAULT_DATA.people
-    : [];
-
-  const nameCounts = people.reduce((counts, person) => {
-    const name = String(person.name || "").trim();
-    counts[name] = (counts[name] || 0) + 1;
-    return counts;
-  }, {});
-
-  const eligiblePeople = people
-    .map((person, index) => ({ person, index }))
-    .filter(({ person }) => !/\bcon\s+dios\b/i.test(String(person.address || "")));
-
-  identityPerson.innerHTML = eligiblePeople.map(({ person, index }) => {
-    const name = String(person.name || "").trim();
-    const duplicate = nameCounts[name] > 1;
-    const extra = duplicate && person.address ? ` · ${String(person.address).split(",")[0]}` : "";
-    return `<option value="${index}">${escHtml(name + extra)}</option>`;
-  }).join("");
-}
 
 function escHtml(value=""){
   return String(value).replace(/[&<>"']/g, char => ({
@@ -241,31 +181,6 @@ function escAttr(value=""){
   return escHtml(value);
 }
 
-async function ensureFamilyIdentity(user){
-  if(!user) return;
-
-  if(user.displayName){
-    const member = findFamilyMemberByName(user.displayName) || findFamilyMemberByEmail(user.email);
-    if(currentUserName) currentUserName.textContent = user.displayName;
-    await loadUserProfile(user, member);
-    return;
-  }
-
-  const emailMatch = findFamilyMemberByEmail(user.email);
-
-  if(emailMatch){
-    await firebase.auth().currentUser.updateProfile({displayName: emailMatch.name});
-    if(currentUserName) currentUserName.textContent = emailMatch.name;
-    await loadUserProfile(firebase.auth().currentUser, emailMatch);
-    return;
-  }
-
-  populateIdentityPeople();
-
-  if(identityDialog && !identityDialog.open){
-    identityDialog.showModal();
-  }
-}
 
 identityForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -285,6 +200,107 @@ identityForm?.addEventListener("submit", async (event) => {
   }catch(error){
     showAuthMessage(friendlyAuthError(error));
   }
+});
+
+
+function findFamilyMemberByEmail(email){
+  const normalized = String(email || "").trim().toLowerCase();
+  return (CELAM_DEFAULT_DATA.people || []).find(person =>
+    String(person.email || "").trim().toLowerCase() === normalized
+  ) || null;
+}
+
+function findFamilyMemberByName(name){
+  const normalized = String(name || "").trim().toLowerCase();
+  return (CELAM_DEFAULT_DATA.people || []).find(person =>
+    String(person.name || "").trim().toLowerCase() === normalized
+  ) || null;
+}
+
+function setCurrentUserContext(user, familyMember = null){
+  if(!user){
+    window.CELAM_CURRENT_USER = null;
+    return;
+  }
+  const member = familyMember || findFamilyMemberByEmail(user.email) || findFamilyMemberByName(user.displayName);
+  window.CELAM_CURRENT_USER = {
+    uid: user.uid,
+    email: user.email || "",
+    name: user.displayName || member?.name || "",
+    familyMember: member || null
+  };
+}
+
+function populateIdentityPeople(){
+  const select = document.getElementById("identityPerson");
+  if(!select) return;
+  const people = Array.isArray(CELAM_DEFAULT_DATA.people) ? CELAM_DEFAULT_DATA.people : [];
+  const eligiblePeople = people
+    .map((person, index) => ({person, index}))
+    .filter(({person}) => !/\bcon\s+dios\b/i.test(String(person.address || "")));
+
+  const counts = {};
+  eligiblePeople.forEach(({person}) => {
+    const name = String(person.name || "").trim();
+    counts[name] = (counts[name] || 0) + 1;
+  });
+
+  select.innerHTML = eligiblePeople.map(({person, index}) => {
+    const name = String(person.name || "").trim();
+    const duplicate = counts[name] > 1;
+    const extra = duplicate && person.address ? ` · ${String(person.address).split(",")[0]}` : "";
+    return `<option value="${index}">${escHtml(name + extra)}</option>`;
+  }).join("");
+}
+
+async function ensureFamilyIdentity(user){
+  if(!user) return null;
+
+  const current = window.CELAM_CURRENT_USER;
+  if(current?.uid === user.uid && current.familyMember) return current.familyMember;
+
+  const byEmail = findFamilyMemberByEmail(user.email);
+  if(byEmail){
+    if(user.displayName !== byEmail.name){
+      try { await user.updateProfile({displayName: byEmail.name}); } catch(e) {}
+    }
+    setCurrentUserContext(firebase.auth().currentUser, byEmail);
+    const nameEl = document.getElementById("currentUserName");
+    if(nameEl) nameEl.textContent = byEmail.name;
+    return byEmail;
+  }
+
+  populateIdentityPeople();
+  const dialog = document.getElementById("identityDialog");
+  if(dialog && !dialog.open) dialog.showModal();
+  return null;
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  const form = document.getElementById("identityForm");
+  const select = document.getElementById("identityPerson");
+  if(!form || !select) return;
+
+  form.addEventListener("submit", async (event)=>{
+    event.preventDefault();
+    const selectedIndex = Number(select.value);
+    const person = Number.isInteger(selectedIndex) ? CELAM_DEFAULT_DATA.people?.[selectedIndex] : null;
+    if(!person) return;
+
+    const user = firebase.auth().currentUser;
+    if(!user) return;
+
+    try{
+      await user.updateProfile({displayName: String(person.name || "").trim()});
+      setCurrentUserContext(firebase.auth().currentUser, person);
+      const nameEl = document.getElementById("currentUserName");
+      if(nameEl) nameEl.textContent = person.name || "";
+      const dialog = document.getElementById("identityDialog");
+      if(dialog?.open) dialog.close();
+    }catch(error){
+      console.error("No se pudo guardar la identidad CELAM:", error);
+    }
+  });
 });
 
 auth.onAuthStateChanged(async (user) => {
