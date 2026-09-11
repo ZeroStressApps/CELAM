@@ -116,6 +116,8 @@ logoutBtn?.addEventListener("click", async () => {
 });
 
 auth.onAuthStateChanged((user) => {
+  console.log("AUTH INICIAL", user);
+console.log("BOTÓN REGISTRO", toggleAuthMode);
   if(user){
     if(authScreen) authScreen.hidden = true;
     if(userBar) userBar.hidden = false;
