@@ -1,8 +1,10 @@
 const MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const REMINDERS_KEY="celam-personal-reminders-v1";
 const POPUP_KEY="celam-shown-reminders-v1";
+const REMINDERS_COLLECTION="reminders";
 let REMINDER_USER_UID="";
 let REMINDER_USER_NAME="";
+let REMINDERS_SYNCING=false;
 let EDITING_REMINDER_ID="";
 
 function reminderStorageKey(){
@@ -11,34 +13,78 @@ function reminderStorageKey(){
 function popupStorageKey(){
   return REMINDER_USER_UID ? `${POPUP_KEY}:${REMINDER_USER_UID}` : null;
 }
+function reminderDb(){
+  return window.CELAM_FIRESTORE_DB || null;
+}
+function cacheReminders(){
+  const key=reminderStorageKey();
+  if(!key)return;
+  try{localStorage.setItem(key,JSON.stringify(data.reminders));}catch(e){console.warn("CELAM: no se pudo guardar la copia local",e)}
+}
+function readCachedReminders(){
+  const key=reminderStorageKey();
+  if(!key)return [];
+  try{
+    const parsed=JSON.parse(localStorage.getItem(key)||"[]");
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return []}
+}
+
+async function syncRemindersFromFirestore(){
+  const db=reminderDb();
+  const uid=REMINDER_USER_UID;
+  if(!db||!uid)return;
+  REMINDERS_SYNCING=true;
+  try{
+    const snap=await db.collection("users").doc(uid).collection(REMINDERS_COLLECTION).get();
+    const remote=snap.docs.map(doc=>({id:doc.id,...doc.data()}));
+
+    if(remote.length===0){
+      // Primera sincronización: conserva los recordatorios locales existentes.
+      // Solo se suben si Firestore está realmente vacío para ese usuario.
+      const local=readCachedReminders();
+      if(local.length){
+        const batch=db.batch();
+        local.forEach(r=>{
+          const id=String(r.id||`${Date.now()}-${Math.random().toString(36).slice(2)}`);
+          r.id=id;
+          batch.set(db.collection("users").doc(uid).collection(REMINDERS_COLLECTION).doc(id),r);
+        });
+        await batch.commit();
+        data.reminders=local;
+      }else{
+        data.reminders=[];
+      }
+    }else{
+      data.reminders=remote;
+    }
+    cacheReminders();
+    render();
+    checkDueReminders();
+  }catch(error){
+    console.error("CELAM: no se pudieron sincronizar los recordatorios con Firestore:",error);
+    // Si Firestore no está disponible, seguimos mostrando la copia local.
+    data.reminders=readCachedReminders();
+    render();
+  }finally{
+    REMINDERS_SYNCING=false;
+  }
+}
+
 function setReminderUser(userOrUid, memberName=""){
-  const uid = typeof userOrUid === "string" ? userOrUid : (userOrUid?.uid || "");
-  REMINDER_USER_UID = uid;
-  REMINDER_USER_NAME = String(memberName || "");
+  const uid=typeof userOrUid==="string"?userOrUid:(userOrUid?.uid||"");
+  REMINDER_USER_UID=uid;
+  REMINDER_USER_NAME=String(memberName||"");
   if(!uid){
     data.reminders=[];
     render();
     return;
   }
 
-  const key = reminderStorageKey();
-  try{
-    let raw = localStorage.getItem(key);
-    // One-time, conservative migration of the old unscoped reminders to Laura S.
-    // only, because the existing legacy reminders were created in Laura's session.
-    if(!raw && REMINDER_USER_NAME.trim().toLowerCase() === "laura s."){
-      const legacy = localStorage.getItem(REMINDERS_KEY);
-      if(legacy){
-        localStorage.setItem(key, legacy);
-        raw = legacy;
-      }
-    }
-    const parsed = JSON.parse(raw || "[]");
-    data.reminders = Array.isArray(parsed) ? parsed : [];
-  }catch(e){
-    data.reminders=[];
-  }
+  data.reminders=readCachedReminders();
   render();
+  // Firestore es la fuente compartida entre dispositivos.
+  syncRemindersFromFirestore();
 }
 window.CELAM_SET_REMINDER_USER=setReminderUser;
 const $=s=>document.querySelector(s);
@@ -46,21 +92,35 @@ const $=s=>document.querySelector(s);
 function clone(o){return JSON.parse(JSON.stringify(o))}
 
 function loadReminders(){
-  const key = reminderStorageKey();
-  if(!key) return [];
+  return readCachedReminders();
+}
+
+async function saveReminders(){
+  cacheReminders();
+  const db=reminderDb(),uid=REMINDER_USER_UID;
+  if(!db||!uid)return;
+
   try{
-    const s=localStorage.getItem(key);
-    const parsed=JSON.parse(s||"[]");
-    return Array.isArray(parsed)?parsed:[];
-  }catch(e){return []}
+    const col=db.collection("users").doc(uid).collection(REMINDERS_COLLECTION);
+    const existing=await col.get();
+    const currentIds=new Set(data.reminders.map(r=>String(r.id)));
+    const batch=db.batch();
+    existing.docs.forEach(doc=>{
+      if(!currentIds.has(doc.id))batch.delete(doc.ref);
+    });
+    data.reminders.forEach(r=>{
+      const id=String(r.id||`${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      r.id=id;
+      batch.set(col.doc(id),r);
+    });
+    await batch.commit();
+    cacheReminders();
+  }catch(error){
+    console.error("CELAM: no se pudieron guardar los recordatorios en Firestore:",error);
+  }
 }
 
-function saveReminders(){
-  const key=reminderStorageKey();
-  if(!key) return;
-  localStorage.setItem(key,JSON.stringify(data.reminders));
-}
-
+// Los recordatorios se guardan en Firestore por UID y además mantienen una copia local de respaldo.
 // Datos oficiales: siempre vienen de data.js.
 // Solo los recordatorios se guardan localmente en el dispositivo.
 let data={
@@ -331,11 +391,11 @@ function renderReminders(){
   });
   c.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{
     const r=rs[Number(b.dataset.done)],real=data.reminders.indexOf(r);
-    data.reminders[real].done=!data.reminders[real].done;saveReminders();render();
+    data.reminders[real].done=!data.reminders[real].done;saveReminders().finally(render);
   });
   c.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>{
     const r=rs[Number(b.dataset.delete)];
-    data.reminders.splice(data.reminders.indexOf(r),1);saveReminders();render();
+    data.reminders.splice(data.reminders.indexOf(r),1);saveReminders().finally(render);
   });
 }
 
@@ -443,7 +503,7 @@ $("#reminderForm")?.addEventListener("submit",e=>{
       title,date:d,time:$("#reminderTime").value,note:$("#reminderNote").value.trim(),done:false,type
     });
   }
-  saveReminders(); EDITING_REMINDER_ID=""; $("#reminderDialog").close(); render();
+  saveReminders().finally(()=>{ EDITING_REMINDER_ID=""; $("#reminderDialog").close(); render(); });
 });
 
 $("#notificationBtn")?.addEventListener("click",async()=>{

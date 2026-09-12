@@ -10,6 +10,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+window.CELAM_FIRESTORE_DB = db;
 
 const authScreen = document.getElementById("authScreen");
 const authForm = document.getElementById("authForm");
