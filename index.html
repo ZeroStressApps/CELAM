@@ -225,13 +225,13 @@
       <div><span class="eyebrow">RECORDATORIO PERSONAL</span><h2>No olvidarlo</h2></div>
       <button class="close-button" id="closeReminder" aria-label="Cerrar">×</button>
     </div>
-    <form id="reminderForm">
+    <form id="reminderForm" autocomplete="off">
       <label>¿A quién quieres felicitar?
         <select id="reminderPerson" required></select>
       </label>
       <label>¿Qué quieres recordar?
-        <select id="reminderType" required>
-          <option value="birthday" selected>🎂 Cumpleaños</option>
+        <select id="reminderType" required autocomplete="off">
+          <option value="birthday">🎂 Cumpleaños</option>
           <option value="saint">🌿 Santo</option>
         </select>
       </label>

@@ -424,21 +424,37 @@ function updateReminderDate(){
   $("#reminderDate").value=dateKey(d.getFullYear(),d.getMonth()+1,d.getDate());
   $("#reminderPreview").textContent=`Se guardará para el próximo ${type==="birthday"?"cumpleaños":"santo"} de ${p.name}.`;
 }
+function setReminderType(value="birthday"){
+  const select=$("#reminderType");
+  if(!select)return;
+
+  // Rebuild the options so a stale browser/PWA form state cannot leave
+  // the select without a valid value. Humans have invented caching.
+  const options=[
+    ["birthday","🎂 Cumpleaños"],
+    ["saint","🌿 Santo"]
+  ];
+  select.innerHTML=options.map(([v,t])=>`<option value="${v}">${t}</option>`).join("");
+  select.value=(value==="saint"?"saint":"birthday");
+  if(select.value!==value && value!=="saint") select.selectedIndex=0;
+}
+
 function openReminder(reminder=null){
   EDITING_REMINDER_ID = reminder?.id || "";
   $("#reminderForm").reset();
+
+  // For a NEW reminder, establish the type before anything else.
+  // populateReminderPeople() also recalculates the date using this value.
+  setReminderType(reminder?.type || "birthday");
   populateReminderPeople();
-  if(!reminder && $("#reminderType")){
-    $("#reminderType").value="birthday";
-    $("#reminderType").selectedIndex=0;
-  }
+
   if(reminder){
     const personIndex=data.people.findIndex(p=>{
       const expected=`${p.name} · ${reminder.type==="saint"?"santo":"cumpleaños"}`;
       return expected===reminder.title;
     });
     if(personIndex>=0) $("#reminderPerson").value=String(personIndex);
-    if($("#reminderType")) $("#reminderType").value=reminder.type||"birthday";
+    setReminderType(reminder.type||"birthday");
     if($("#reminderDate")) $("#reminderDate").value=reminder.date||"";
     if($("#reminderTime")) $("#reminderTime").value=reminder.time||"";
     if($("#reminderNote")) $("#reminderNote").value=reminder.note||"";
@@ -448,21 +464,13 @@ function openReminder(reminder=null){
     $("#reminderDialog h2").textContent="No olvidarlo";
     $("#reminderForm button[type=submit]").textContent="Guardar recordatorio";
   }
+
   $("#reminderDialog").showModal();
 
-  // Al crear un recordatorio nuevo, Cumpleaños debe quedar seleccionado
-  // aunque el navegador haya conservado el estado anterior del formulario.
+  // Some installed PWAs restore form controls after the dialog opens.
+  // Re-apply the default on the next paint as well.
   if(!reminder){
-    const typeSelect = $("#reminderType");
-    if(typeSelect){
-      typeSelect.value = "birthday";
-      typeSelect.selectedIndex = 0;
-      typeSelect.dispatchEvent(new Event("change", {bubbles:true}));
-      requestAnimationFrame(()=>{
-        typeSelect.value = "birthday";
-        typeSelect.selectedIndex = 0;
-      });
-    }
+    requestAnimationFrame(()=>setReminderType("birthday"));
   }
 }
 function checkDueReminders(){
