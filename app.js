@@ -774,6 +774,30 @@ async function renderRanking(mode="monthly"){
   }catch(e){console.error(e);box.innerHTML="<div class='empty'>No se ha podido cargar el ranking.</div>"}
 }
 
+
+async function deleteChallenge(challengeId){
+  if(!isChallengeAdmin())return;
+  const challenge=CELAM_CHALLENGES.find(x=>x.id===challengeId);
+  if(!challenge)return;
+
+  const title=challenge.title||"este reto";
+  const ok=confirm(`¿Quieres eliminar "${title}"?\n\nEsta acción no se puede deshacer.`);
+  if(!ok)return;
+
+  const db=challengesDb();
+  if(!db)return;
+
+  try{
+    await db.collection("challenges").doc(challengeId).delete();
+    await loadChallenges();
+    await renderAdminChallenges();
+    renderChallenges();
+  }catch(error){
+    console.error(error);
+    alert("No se ha podido eliminar el reto. Revisa las reglas de Firestore.");
+  }
+}
+
 async function renderAdminChallenges(){
   const box=$("#adminChallengeList");
   if(!box)return;
@@ -787,9 +811,10 @@ async function renderAdminChallenges(){
   }
   box.innerHTML=CELAM_CHALLENGES.map(c=>`<article class="admin-challenge-row">
     <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Reto CELAM")}</strong><small>⭐ ${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</small></div>
-    <button class="challenge-edit" data-admin-edit-challenge="${esc(c.id)}">✎ Editar</button>
+    <div class="admin-challenge-actions"><button class="challenge-edit" data-admin-edit-challenge="${esc(c.id)}">✎ Editar</button><button class="challenge-delete" data-admin-delete-challenge="${esc(c.id)}">🗑️ Eliminar</button></div>
   </article>`).join("");
   box.querySelectorAll("[data-admin-edit-challenge]").forEach(btn=>btn.onclick=()=>openChallengeDialog(CELAM_CHALLENGES.find(x=>x.id===btn.dataset.adminEditChallenge)));
+  box.querySelectorAll("[data-admin-delete-challenge]").forEach(btn=>btn.onclick=()=>deleteChallenge(btn.dataset.adminDeleteChallenge));
 }
 
 $("#challengeRankingBtn")?.addEventListener("click",async()=>{
