@@ -326,7 +326,11 @@ function findFamilyMemberByName(name){
 
 function updateAdminMenu(isAdmin){
   if(!menuAdmin)return;
-  menuAdmin.hidden=!isAdmin;
+  // The administration entry is visible ONLY for an explicit administrator role.
+  // Any missing/unknown value is treated as a normal user.
+  const canAdmin = isAdmin === true && window.CELAM_CURRENT_USER?.role === "administrador";
+  menuAdmin.hidden = !canAdmin;
+  menuAdmin.setAttribute("aria-hidden", canAdmin ? "false" : "true");
 }
 
 function setCurrentUserContext(user, familyMember = null, role = "usuario"){

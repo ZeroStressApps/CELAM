@@ -585,9 +585,12 @@ async function isCurrentUserProtagonist(c){
   if(isChallengeAdmin())return true;
   const me=window.CELAM_CURRENT_USER;
   if(!me)return false;
+  if(Array.isArray(c.protagonistUids) && c.protagonistUids.includes(me.uid))return true;
   if(c.protagonistUid && c.protagonistUid===me.uid)return true;
-  if(c.protagonistEmail && String(c.protagonistEmail).toLowerCase()===String(me.email||"").toLowerCase())return true;
-  if(c.protagonistName && String(c.protagonistName).toLowerCase()===String(me.name||"").toLowerCase())return true;
+  const emails=Array.isArray(c.protagonistEmails)?c.protagonistEmails:[c.protagonistEmail];
+  if(emails.filter(Boolean).some(e=>String(e).toLowerCase()===String(me.email||"").toLowerCase()))return true;
+  const names=Array.isArray(c.protagonistNames)?c.protagonistNames:[c.protagonistName];
+  if(names.filter(Boolean).some(n=>String(n).toLowerCase()===String(me.name||"").toLowerCase()))return true;
   return false;
 }
 
@@ -598,7 +601,7 @@ async function renderChallengeCard(c){
   return `<article class="challenge-card">
     <div class="challenge-card-header">
       <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><h3>${esc(c.title||"Reto CELAM")}</h3>
-      <div class="challenge-meta">⭐ Protagonista: <strong>${esc(c.protagonistName||"Por decidir")}</strong></div></div>
+      <div class="challenge-meta">⭐ Protagonista: <strong>${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</strong></div></div>
       <span class="challenge-status ${me?"done":"pending"}">${me?"✓ Participación registrada":"🟢 Abierto"}</span>
     </div>
     <div class="challenge-description">${esc(c.description||"")}</div>
@@ -634,19 +637,25 @@ async function renderChallenges(){
   c.querySelectorAll("[data-edit-challenge]").forEach(btn=>btn.onclick=()=>openChallengeDialog(CELAM_CHALLENGES.find(x=>x.id===btn.dataset.editChallenge)));
 }
 
-function populateChallengeProtagonists(selected=""){
+function populateChallengeProtagonists(selectedIds=[]){
   const s=$("#challengeProtagonist");if(!s)return;
-  s.innerHTML=(data.people||[]).map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("");
-  if(selected){
-    const index=(data.people||[]).findIndex(p=>p.name===selected);
-    if(index>=0)s.value=String(index);
+  const selected=new Set((Array.isArray(selectedIds)?selectedIds:[selectedIds]).map(String));
+  s.innerHTML=(data.people||[]).map((p,i)=>`<option value="${i}" ${selected.has(String(i))?"selected":""}>${esc(p.name)}</option>`).join("");
+}
+function getChallengeProtagonistIds(challenge){
+  if(Array.isArray(challenge?.protagonistIds)) return challenge.protagonistIds.map(String);
+  // Compatibilidad con retos antiguos que tuvieran un solo protagonista.
+  if(challenge?.protagonistName){
+    const i=(data.people||[]).findIndex(p=>p.name===challenge.protagonistName);
+    if(i>=0)return [String(i)];
   }
+  return [];
 }
 function openChallengeDialog(challenge=null){
   if(!isChallengeAdmin())return;
   $("#challengeForm").reset();
   $("#challengeId").value=challenge?.id||"";
-  populateChallengeProtagonists(challenge?.protagonistName||"");
+  populateChallengeProtagonists(getChallengeProtagonistIds(challenge));
   const now=new Date();
   $("#challengeMonth").value=challenge?.month||`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
   $("#challengeTitle").value=challenge?.title||`Reto del mes de ${MONTHS[Number($("#challengeMonth").value.split("-")[1])-1]||""}`;
@@ -660,13 +669,25 @@ async function saveChallenge(e){
   e.preventDefault();
   const db=challengesDb();if(!db||!isChallengeAdmin())return;
   const id=$("#challengeId").value.trim();
-  const pi=Number($("#challengeProtagonist").value);
-  const person=data.people[pi];
+  const selectedOptions=Array.from($("#challengeProtagonist")?.selectedOptions||[]);
+  const protagonistIds=selectedOptions.map(o=>String(o.value));
+  const people=(data.people||[]);
+  const protagonists=protagonistIds.map(i=>people[Number(i)]).filter(Boolean);
   const payload={
-    title:$("#challengeTitle").value.trim(),
+    title:$("#challengeTitle").value.trim() || (function(){
+      const v=$("#challengeMonth").value;
+      if(!v)return "";
+      const parts=v.split("-");
+      const monthName=MONTHS[Number(parts[1])-1]||"";
+      return monthName ? `Reto del mes de ${monthName}` : "";
+    })(),
     month:$("#challengeMonth").value,
-    protagonistName:person?.name||"",
-    protagonistEmail:person?.email||"",
+    protagonistIds,
+    protagonistNames:protagonists.map(p=>p.name),
+    protagonistEmails:protagonists.map(p=>p.email||"").filter(Boolean),
+    // Compatibilidad con el formato anterior de un solo protagonista.
+    protagonistName:protagonists[0]?.name||"",
+    protagonistEmail:protagonists[0]?.email||"",
     description:$("#challengeDescription").value.trim(),
     videoUrl:$("#challengeVideoUrl").value.trim(),
     submissionUrl:$("#challengeSubmissionUrl").value.trim(),
@@ -765,7 +786,7 @@ async function renderAdminChallenges(){
     return;
   }
   box.innerHTML=CELAM_CHALLENGES.map(c=>`<article class="admin-challenge-row">
-    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Reto CELAM")}</strong><small>⭐ ${esc(c.protagonistName||"Por decidir")}</small></div>
+    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Reto CELAM")}</strong><small>⭐ ${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</small></div>
     <button class="challenge-edit" data-admin-edit-challenge="${esc(c.id)}">✎ Editar</button>
   </article>`).join("");
   box.querySelectorAll("[data-admin-edit-challenge]").forEach(btn=>btn.onclick=()=>openChallengeDialog(CELAM_CHALLENGES.find(x=>x.id===btn.dataset.adminEditChallenge)));

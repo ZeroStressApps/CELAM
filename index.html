@@ -344,22 +344,24 @@
     <form id="challengeForm">
       <input type="hidden" id="challengeId">
       <label>Título del reto
-        <input id="challengeTitle" type="text" placeholder="Ej. Reto del mes de agosto" required>
+        <input id="challengeTitle" type="text" placeholder="Ej. Reto del mes de agosto">
       </label>
       <label>Mes
-        <input id="challengeMonth" type="month" required>
+        <input id="challengeMonth" type="month">
       </label>
       <label>Protagonista del mes
-        <select id="challengeProtagonist" required></select>
+        <select id="challengeProtagonist" multiple size="6" aria-describedby="challengeProtagonistHelp"></select>
+        <small id="challengeProtagonistHelp" class="field-help">Puedes seleccionar varios protagonistas. No hay límite.</small>
+        <small class="field-help">Puedes dejar datos pendientes y completarlos más adelante.</small>
       </label>
       <label>¿En qué consiste?
-        <textarea id="challengeDescription" rows="4" placeholder="Explica el reto de forma sencilla." required></textarea>
+        <textarea id="challengeDescription" rows="4" placeholder="Explica el reto de forma sencilla."></textarea>
       </label>
       <label>Vídeo del reto (YouTube)
-        <input id="challengeVideoUrl" type="url" placeholder="https://www.youtube.com/..." required>
+        <input id="challengeVideoUrl" type="url" placeholder="https://www.youtube.com/...">
       </label>
       <label>Enlace para subir la participación
-        <input id="challengeSubmissionUrl" type="url" placeholder="https://..." required>
+        <input id="challengeSubmissionUrl" type="url" placeholder="https://...">
       </label>
       <div class="dialog-actions">
         <button type="button" class="secondary-button" id="cancelChallenge">Cancelar</button>
