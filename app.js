@@ -424,37 +424,21 @@ function updateReminderDate(){
   $("#reminderDate").value=dateKey(d.getFullYear(),d.getMonth()+1,d.getDate());
   $("#reminderPreview").textContent=`Se guardará para el próximo ${type==="birthday"?"cumpleaños":"santo"} de ${p.name}.`;
 }
-function setReminderType(value="birthday"){
-  const select=$("#reminderType");
-  if(!select)return;
-
-  // Rebuild the options so a stale browser/PWA form state cannot leave
-  // the select without a valid value. Humans have invented caching.
-  const options=[
-    ["birthday","🎂 Cumpleaños"],
-    ["saint","🌿 Santo"]
-  ];
-  select.innerHTML=options.map(([v,t])=>`<option value="${v}">${t}</option>`).join("");
-  select.value=(value==="saint"?"saint":"birthday");
-  if(select.value!==value && value!=="saint") select.selectedIndex=0;
-}
-
 function openReminder(reminder=null){
   EDITING_REMINDER_ID = reminder?.id || "";
   $("#reminderForm").reset();
-
-  // For a NEW reminder, establish the type before anything else.
-  // populateReminderPeople() also recalculates the date using this value.
-  setReminderType(reminder?.type || "birthday");
   populateReminderPeople();
-
+  if(!reminder && $("#reminderType")){
+    $("#reminderType").value="birthday";
+    $("#reminderType").selectedIndex=0;
+  }
   if(reminder){
     const personIndex=data.people.findIndex(p=>{
       const expected=`${p.name} · ${reminder.type==="saint"?"santo":"cumpleaños"}`;
       return expected===reminder.title;
     });
     if(personIndex>=0) $("#reminderPerson").value=String(personIndex);
-    setReminderType(reminder.type||"birthday");
+    if($("#reminderType")) $("#reminderType").value=reminder.type||"birthday";
     if($("#reminderDate")) $("#reminderDate").value=reminder.date||"";
     if($("#reminderTime")) $("#reminderTime").value=reminder.time||"";
     if($("#reminderNote")) $("#reminderNote").value=reminder.note||"";
@@ -464,14 +448,7 @@ function openReminder(reminder=null){
     $("#reminderDialog h2").textContent="No olvidarlo";
     $("#reminderForm button[type=submit]").textContent="Guardar recordatorio";
   }
-
   $("#reminderDialog").showModal();
-
-  // Some installed PWAs restore form controls after the dialog opens.
-  // Re-apply the default on the next paint as well.
-  if(!reminder){
-    requestAnimationFrame(()=>setReminderType("birthday"));
-  }
 }
 function checkDueReminders(){
   const today=new Date(),key=dateKey(today.getFullYear(),today.getMonth()+1,today.getDate());
@@ -535,6 +512,268 @@ $("#notificationBtn")?.addEventListener("click",async()=>{
   alert(p==="granted"?"Avisos activados. CELAM podrá mostrarte el aviso cuando abras la app ese día.":"No se han activado los avisos.");
 });
 $("#closeBirthdayPopup")?.addEventListener("click",()=>$("#birthdayPopup").close());
+
+
+/* =========================
+   RETOS CELAM
+   ========================= */
+let CELAM_CHALLENGES=[];
+let CURRENT_RANKING_MODE="monthly";
+
+function challengesDb(){return window.CELAM_FIRESTORE_DB||null}
+function currentUid(){return window.CELAM_CURRENT_USER?.uid||""}
+function currentName(){return window.CELAM_CURRENT_USER?.name||"Usuario"}
+function isChallengeAdmin(){return !!window.CELAM_IS_ADMIN}
+function familyNameByIndex(i){return data.people?.[Number(i)]?.name||""}
+
+async function loadChallenges(){
+  const db=challengesDb();
+  if(!db)return;
+  try{
+    const snap=await db.collection("challenges").orderBy("month","desc").get();
+    CELAM_CHALLENGES=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(error){
+    console.error("CELAM: no se pudieron cargar los retos",error);
+    try{
+      const snap=await db.collection("challenges").get();
+      CELAM_CHALLENGES=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.month||"").localeCompare(String(a.month||"")));
+    }catch(e){CELAM_CHALLENGES=[]}
+  }
+  renderChallenges();
+}
+
+function challengeMonthLabel(month){
+  if(!month)return "";
+  const [y,m]=String(month).split("-");
+  return `${MONTHS[Number(m)-1]||m} ${y}`;
+}
+function challengeCurrent(){
+  const now=new Date();
+  const key=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  return CELAM_CHALLENGES.find(c=>c.month===key)||CELAM_CHALLENGES[0]||null;
+}
+function validUrl(u){try{return new URL(u).href}catch(e){return "#"}}
+
+async function getMyParticipation(challengeId){
+  const db=challengesDb(),uid=currentUid();
+  if(!db||!uid)return null;
+  try{
+    const doc=await db.collection("challenges").doc(challengeId).collection("participants").doc(uid).get();
+    return doc.exists?{id:doc.id,...doc.data()}:null;
+  }catch(e){return null}
+}
+
+async function markParticipation(challengeId, submissionUrl){
+  const db=challengesDb(),uid=currentUid();
+  if(!db||!uid)return;
+  try{
+    await db.collection("challenges").doc(challengeId).collection("participants").doc(uid).set({
+      uid,name:currentName(),submittedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      submissionUrl:submissionUrl||""
+    },{merge:true});
+    alert("¡Participación registrada en CELAM!");
+    renderChallenges();
+  }catch(e){
+    console.error(e);
+    alert("No se ha podido registrar la participación. Revisa la conexión.");
+  }
+}
+
+
+async function isCurrentUserProtagonist(c){
+  if(isChallengeAdmin())return true;
+  const me=window.CELAM_CURRENT_USER;
+  if(!me)return false;
+  if(c.protagonistUid && c.protagonistUid===me.uid)return true;
+  if(c.protagonistEmail && String(c.protagonistEmail).toLowerCase()===String(me.email||"").toLowerCase())return true;
+  if(c.protagonistName && String(c.protagonistName).toLowerCase()===String(me.name||"").toLowerCase())return true;
+  return false;
+}
+
+async function renderChallengeCard(c){
+  const me=await getMyParticipation(c.id);
+  const canScore=isChallengeAdmin() || await isCurrentUserProtagonist(c);
+  const video=validUrl(c.videoUrl), upload=validUrl(c.submissionUrl);
+  return `<article class="challenge-card">
+    <div class="challenge-card-header">
+      <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><h3>${esc(c.title||"Reto CELAM")}</h3>
+      <div class="challenge-meta">⭐ Protagonista: <strong>${esc(c.protagonistName||"Por decidir")}</strong></div></div>
+      <span class="challenge-status ${me?"done":"pending"}">${me?"✓ Participación registrada":"🟢 Abierto"}</span>
+    </div>
+    <div class="challenge-description">${esc(c.description||"")}</div>
+    <div class="challenge-actions">
+      ${c.videoUrl?`<a class="challenge-video" href="${video}" target="_blank" rel="noopener">▶️ Ver vídeo</a>`:""}
+      ${c.submissionUrl?`<a class="challenge-submit" href="${upload}" target="_blank" rel="noopener">📤 Subir mi participación</a>`:""}
+      <button class="challenge-submit" data-mark-participation="${esc(c.id)}">${me?"✓ He participado":"📌 Registrar mi participación"}</button>
+      ${canScore?`<button class="challenge-score" data-score-challenge="${esc(c.id)}">🏅 Puntuar participantes</button>`:""}
+      ${isChallengeAdmin()?`<button class="challenge-edit" data-edit-challenge="${esc(c.id)}">✎ Editar</button>`:""}
+    </div>
+  </article>`;
+}
+
+async function renderChallenges(){
+  const c=$("#challengeList"); if(!c)return;
+  if(!currentUid()){
+    c.innerHTML=`<div class="empty">Inicia sesión para ver los retos de CELAM.</div>`;return;
+  }
+  if(!CELAM_CHALLENGES.length){
+    c.innerHTML=`<div class="empty">Todavía no hay ningún reto publicado. Cuando llegue el primero, aparecerá aquí.</div>`;
+    return;
+  }
+  const cards=await Promise.all(CELAM_CHALLENGES.map(renderChallengeCard));
+  c.innerHTML=cards.join("");
+  c.querySelectorAll("[data-mark-participation]").forEach(btn=>btn.onclick=async()=>{
+    const id=btn.dataset.markParticipation;
+    const challenge=CELAM_CHALLENGES.find(x=>x.id===id);
+    if(!challenge)return;
+    const url=challenge.submissionUrl||"";
+    await markParticipation(id,url);
+  });
+  c.querySelectorAll("[data-score-challenge]").forEach(btn=>btn.onclick=()=>openScoreDialog(btn.dataset.scoreChallenge));
+  c.querySelectorAll("[data-edit-challenge]").forEach(btn=>btn.onclick=()=>openChallengeDialog(CELAM_CHALLENGES.find(x=>x.id===btn.dataset.editChallenge)));
+}
+
+function populateChallengeProtagonists(selected=""){
+  const s=$("#challengeProtagonist");if(!s)return;
+  s.innerHTML=(data.people||[]).map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("");
+  if(selected){
+    const index=(data.people||[]).findIndex(p=>p.name===selected);
+    if(index>=0)s.value=String(index);
+  }
+}
+function openChallengeDialog(challenge=null){
+  if(!isChallengeAdmin())return;
+  $("#challengeForm").reset();
+  $("#challengeId").value=challenge?.id||"";
+  populateChallengeProtagonists(challenge?.protagonistName||"");
+  const now=new Date();
+  $("#challengeMonth").value=challenge?.month||`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  $("#challengeTitle").value=challenge?.title||`Reto del mes de ${MONTHS[Number($("#challengeMonth").value.split("-")[1])-1]||""}`;
+  $("#challengeDescription").value=challenge?.description||"";
+  $("#challengeVideoUrl").value=challenge?.videoUrl||"";
+  $("#challengeSubmissionUrl").value=challenge?.submissionUrl||"";
+  $("#challengeDialogTitle").textContent=challenge?"Modificar reto":"Crear reto";
+  $("#challengeDialog").showModal();
+}
+async function saveChallenge(e){
+  e.preventDefault();
+  const db=challengesDb();if(!db||!isChallengeAdmin())return;
+  const id=$("#challengeId").value.trim();
+  const pi=Number($("#challengeProtagonist").value);
+  const person=data.people[pi];
+  const payload={
+    title:$("#challengeTitle").value.trim(),
+    month:$("#challengeMonth").value,
+    protagonistName:person?.name||"",
+    protagonistEmail:person?.email||"",
+    description:$("#challengeDescription").value.trim(),
+    videoUrl:$("#challengeVideoUrl").value.trim(),
+    submissionUrl:$("#challengeSubmissionUrl").value.trim(),
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(!id)payload.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+  try{
+    const ref=id?db.collection("challenges").doc(id):db.collection("challenges").doc();
+    await ref.set(payload,{merge:true});
+    $("#challengeDialog").close();
+    await loadChallenges();
+  }catch(error){
+    console.error(error);
+    alert("No se ha podido guardar el reto. Revisa las reglas de Firestore.");
+  }
+}
+async function openScoreDialog(challengeId){
+  const c=CELAM_CHALLENGES.find(x=>x.id===challengeId);
+  if(!c)return;
+  if(!(await isCurrentUserProtagonist(c))){
+    alert("Solo el protagonista del mes o la administración pueden puntuar.");
+    return;
+  }
+  const db=challengesDb();if(!db)return;
+  $("#scoreDialogTitle").textContent=`Puntuaciones · ${challengeMonthLabel(c.month)}`;
+  $("#scoreList").innerHTML="<div class='empty'>Cargando participantes…</div>";
+  $("#scoreDialog").showModal();
+  try{
+    const snap=await db.collection("challenges").doc(challengeId).collection("participants").orderBy("submittedAt","asc").get();
+    if(snap.empty){$("#scoreList").innerHTML="<div class='empty'>Todavía no hay participaciones registradas.</div>";return}
+    $("#scoreList").innerHTML=snap.docs.map(d=>{
+      const p=d.data();
+      return `<div class="score-row"><div><strong>${esc(p.name||"Participante")}</strong><small>${p.submissionUrl?"Participación enviada":"Participación registrada"}</small></div>
+      <input class="score-input" type="number" min="0" max="10" step="1" value="${Number.isFinite(p.score)?p.score:""}" placeholder="0-10" data-score-uid="${esc(d.id)}"></div>`;
+    }).join("");
+    $("#scoreList").insertAdjacentHTML("beforeend",`<div class="dialog-actions"><button class="primary-button" id="saveScoresBtn">Guardar puntuaciones</button></div>`);
+    $("#saveScoresBtn").onclick=async()=>{
+      const batch=db.batch();
+      $("#scoreList").querySelectorAll("[data-score-uid]").forEach(input=>{
+        const score=input.value===""?null:Number(input.value);
+        if(score===null||Number.isNaN(score))return;
+        const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(input.dataset.scoreUid);
+        batch.set(ref,{score,scoredAt:firebase.firestore.FieldValue.serverTimestamp(),scoredBy:currentUid()},{merge:true});
+      });
+      try{await batch.commit();alert("Puntuaciones guardadas.");$("#scoreDialog").close();renderRanking(CURRENT_RANKING_MODE)}
+      catch(e){alert("No se han podido guardar las puntuaciones.")}
+    };
+  }catch(e){
+    console.error(e);
+    $("#scoreList").innerHTML="<div class='empty'>No se han podido cargar las participaciones. Revisa las reglas de Firestore.</div>";
+  }
+}
+async function renderRanking(mode="monthly"){
+  CURRENT_RANKING_MODE=mode;
+  const box=$("#rankingContent");if(!box)return;
+  const db=challengesDb();if(!db){box.innerHTML="<div class='empty'>Firestore no está disponible.</div>";return}
+  box.innerHTML="<div class='empty'>Cargando ranking…</div>";
+  try{
+    const challengeDocs=await db.collection("challenges").get();
+    const challenges=challengeDocs.docs.map(d=>({id:d.id,...d.data()}));
+    const totals={};
+    challenges.forEach(c=>{
+      const year=String(c.month||"").slice(0,4);
+      if(mode==="monthly" && c.month!==challengeCurrent()?.month)return;
+      if(mode==="annual" && year!==String(data.year))return;
+    });
+    for(const c of challenges){
+      const year=String(c.month||"").slice(0,4);
+      if(mode==="annual" && year!==String(data.year))continue;
+      if(mode==="monthly" && c.month!==challengeCurrent()?.month)continue;
+      const snap=await db.collection("challenges").doc(c.id).collection("participants").get();
+      snap.forEach(d=>{
+        const p=d.data(),score=Number(p.score);
+        if(!Number.isFinite(score))return;
+        totals[p.uid]=totals[p.uid]||{name:p.name||"Participante",points:0};
+        totals[p.uid].points+=score;
+      });
+    }
+    const rows=Object.values(totals).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name));
+    if(!rows.length){box.innerHTML="<div class='empty'>Todavía no hay puntuaciones.</div>";return}
+    box.innerHTML=`<table class="ranking-table"><thead><tr><th>#</th><th>Participante</th><th>Puntos</th></tr></thead><tbody>${
+      rows.map((r,i)=>`<tr><td class="ranking-place">${i<3?["🥇","🥈","🥉"][i]:i+1}</td><td>${esc(r.name)}</td><td><strong>${r.points}</strong></td></tr>`).join("")
+    }</tbody></table>`;
+  }catch(e){console.error(e);box.innerHTML="<div class='empty'>No se ha podido cargar el ranking.</div>"}
+}
+
+$("#challengeRankingBtn")?.addEventListener("click",async()=>{
+  $("#rankingPanel").hidden=false; await renderRanking("monthly");
+  $("#rankingPanel").scrollIntoView({behavior:"smooth",block:"start"});
+});
+$("#closeRankingBtn")?.addEventListener("click",()=>$("#rankingPanel").hidden=true);
+document.querySelectorAll("[data-ranking]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-ranking]").forEach(x=>x.classList.toggle("active",x===b));renderRanking(b.dataset.ranking)});
+$("#addChallengeBtn")?.addEventListener("click",()=>openChallengeDialog());
+$("#closeChallenge")?.addEventListener("click",()=>$("#challengeDialog").close());
+$("#cancelChallenge")?.addEventListener("click",()=>$("#challengeDialog").close());
+$("#challengeForm")?.addEventListener("submit",saveChallenge);
+$("#closeScore")?.addEventListener("click",()=>$("#scoreDialog").close());
+
+const _switchView=switchView;
+switchView=function(view){
+  _switchView(view);
+  if(view==="challenges"){
+    document.getElementById("addChallengeBtn")?.toggleAttribute("hidden",!isChallengeAdmin());
+    loadChallenges();
+  }
+};
+
+window.CELAM_LOAD_CHALLENGES=loadChallenges;
 
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 render();

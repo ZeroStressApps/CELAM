@@ -470,5 +470,6 @@ const CELAM_DEFAULT_DATA = {
       "address": "Arturo Soria, 301, 7ºA, 28033, MADRID"
     }
   ],
-  "reminders": []
+  "reminders": [],
+  "challenges": []
 };

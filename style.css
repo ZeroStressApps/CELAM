@@ -443,3 +443,40 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
     font-size:12px;
   }
 }
+
+/* RETOS CELAM */
+.challenge-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 20px}
+.challenge-list{display:grid;gap:18px}
+.challenge-card{background:var(--paper);border-radius:26px;padding:24px;box-shadow:var(--shadow);border-left:6px solid var(--sage)}
+.challenge-card.closed{opacity:.82}
+.challenge-card-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.challenge-card h3{font-family:"Playfair Display",serif;font-size:28px;margin:4px 0 6px}
+.challenge-meta{color:var(--muted);font-size:14px}
+.challenge-description{font-size:16px;line-height:1.55;margin:16px 0}
+.challenge-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.challenge-actions a,.challenge-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 16px;border-radius:15px;border:0;text-decoration:none;font-weight:700}
+.challenge-video{background:var(--peach);color:var(--ink)}
+.challenge-submit{background:var(--sage);color:#314A3B}
+.challenge-score{background:var(--lavender);color:var(--ink)}
+.challenge-edit{background:var(--white);color:var(--ink);border:1px solid var(--line)!important}
+.challenge-status{display:inline-flex;padding:6px 10px;border-radius:999px;background:#edf5ef;color:var(--sage-dark);font-size:12px;font-weight:700}
+.challenge-status.pending{background:#fff1e7}
+.challenge-status.done{background:#edf5ef}
+.ranking-panel{margin-top:24px;background:var(--paper);border-radius:26px;padding:22px;box-shadow:var(--shadow)}
+.ranking-tabs{display:flex;gap:8px;margin:8px 0 18px}
+.ranking-tab{border:0;background:var(--white);padding:10px 15px;border-radius:13px;font-weight:700;color:var(--muted)}
+.ranking-tab.active{background:var(--sage);color:#314A3B}
+.ranking-table{width:100%;border-collapse:collapse}
+.ranking-table th,.ranking-table td{padding:11px 8px;border-bottom:1px solid var(--line);text-align:left}
+.ranking-table th:last-child,.ranking-table td:last-child{text-align:right}
+.ranking-place{width:46px;font-size:20px}
+.score-row{display:grid;grid-template-columns:1fr 90px;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.score-row strong{display:block}.score-row small{color:var(--muted)}
+.score-input{width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--white)}
+.challenge-note{color:var(--muted);line-height:1.5}
+@media(max-width:700px){
+  .tabs{grid-template-columns:repeat(5,1fr);overflow-x:auto}
+  .tab{font-size:12px;padding:12px 5px;min-height:55px}
+  .challenge-card{padding:19px}.challenge-card h3{font-size:24px}
+  .challenge-actions a,.challenge-actions button{width:100%}
+}

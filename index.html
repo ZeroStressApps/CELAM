@@ -32,6 +32,7 @@
     <button class="tab active" data-view="calendar">📅 Calendario</button>
     <button class="tab" data-view="agenda">👨‍👩‍👧 Agenda</button>
     <button class="tab" data-view="reminders">🔔 Recordatorios</button>
+    <button class="tab" data-view="challenges">🏆 Retos</button>
     <button class="tab" data-view="tree">🪾 Árbol</button>
   </nav>
 
@@ -169,6 +170,34 @@
       <div id="remindersList" class="reminders-list"></div>
     </section>
 
+
+    <section id="challengesView" class="view">
+      <section class="page-heading">
+        <span class="eyebrow">UN RETO CADA MES</span>
+        <h2>Retos CELAM</h2>
+        <p>Todo el reto en un mismo sitio: vídeo, participación y ranking.</p>
+      </section>
+
+      <div class="challenge-toolbar">
+        <button class="primary-button" id="challengeRankingBtn">🏆 Ver ranking</button>
+        <button class="secondary-button admin-only" id="addChallengeBtn" hidden>＋ Crear reto</button>
+      </div>
+
+      <div id="challengeList" class="challenge-list"></div>
+
+      <section class="ranking-panel" id="rankingPanel" hidden>
+        <div class="section-heading compact">
+          <div><span class="eyebrow">CLASIFICACIÓN</span><h2>Ranking CELAM</h2></div>
+          <button class="close-button" id="closeRankingBtn" aria-label="Cerrar">×</button>
+        </div>
+        <div class="ranking-tabs">
+          <button class="ranking-tab active" data-ranking="monthly">Mensual</button>
+          <button class="ranking-tab" data-ranking="annual">Anual</button>
+        </div>
+        <div id="rankingContent"></div>
+      </section>
+    </section>
+
     <section id="treeView" class="view">
       <section class="page-heading">
         <span class="eyebrow">HISTORIA FAMILIAR</span>
@@ -225,13 +254,13 @@
       <div><span class="eyebrow">RECORDATORIO PERSONAL</span><h2>No olvidarlo</h2></div>
       <button class="close-button" id="closeReminder" aria-label="Cerrar">×</button>
     </div>
-    <form id="reminderForm" autocomplete="off">
+    <form id="reminderForm">
       <label>¿A quién quieres felicitar?
         <select id="reminderPerson" required></select>
       </label>
       <label>¿Qué quieres recordar?
-        <select id="reminderType" required autocomplete="off">
-          <option value="birthday">🎂 Cumpleaños</option>
+        <select id="reminderType" required>
+          <option value="birthday" selected>🎂 Cumpleaños</option>
           <option value="saint">🌿 Santo</option>
         </select>
       </label>
@@ -250,6 +279,48 @@
         <button type="submit" class="primary-button">Guardar recordatorio</button>
       </div>
     </form>
+  </dialog>
+
+
+  <dialog id="challengeDialog" class="challenge-dialog">
+    <div class="dialog-header">
+      <div><span class="eyebrow">RETOS CELAM</span><h2 id="challengeDialogTitle">Crear reto</h2></div>
+      <button class="close-button" id="closeChallenge" aria-label="Cerrar">×</button>
+    </div>
+    <form id="challengeForm">
+      <input type="hidden" id="challengeId">
+      <label>Título del reto
+        <input id="challengeTitle" type="text" placeholder="Ej. Reto del mes de agosto" required>
+      </label>
+      <label>Mes
+        <input id="challengeMonth" type="month" required>
+      </label>
+      <label>Protagonista del mes
+        <select id="challengeProtagonist" required></select>
+      </label>
+      <label>¿En qué consiste?
+        <textarea id="challengeDescription" rows="4" placeholder="Explica el reto de forma sencilla." required></textarea>
+      </label>
+      <label>Vídeo del reto (YouTube)
+        <input id="challengeVideoUrl" type="url" placeholder="https://www.youtube.com/..." required>
+      </label>
+      <label>Enlace para subir la participación
+        <input id="challengeSubmissionUrl" type="url" placeholder="https://..." required>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="secondary-button" id="cancelChallenge">Cancelar</button>
+        <button type="submit" class="primary-button">Guardar reto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="scoreDialog" class="challenge-dialog">
+    <div class="dialog-header">
+      <div><span class="eyebrow">PUNTUAR PARTICIPACIONES</span><h2 id="scoreDialogTitle">Puntuaciones</h2></div>
+      <button class="close-button" id="closeScore" aria-label="Cerrar">×</button>
+    </div>
+    <p class="challenge-note">El protagonista del mes puntúa a los participantes. Los puntos se guardan en CELAM y alimentan el ranking.</p>
+    <div id="scoreList"></div>
   </dialog>
 
   <dialog id="birthdayPopup" class="birthday-popup">
