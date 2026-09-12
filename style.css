@@ -480,3 +480,29 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
   .challenge-card{padding:19px}.challenge-card h3{font-size:24px}
   .challenge-actions a,.challenge-actions button{width:100%}
 }
+
+/* ===== MENÚ PERSONAL ===== */
+.user-menu-wrap{position:relative;display:inline-flex}
+.user-menu-button{border:0;background:rgba(255,255,255,.72);color:var(--sage-dark);padding:8px 10px;border-radius:13px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:7px;box-shadow:var(--shadow)}
+.user-menu-button:hover,.user-menu-button[aria-expanded="true"]{background:#fff}
+.user-menu-chevron{font-size:11px;transition:transform .15s ease}
+.user-menu-button[aria-expanded="true"] .user-menu-chevron{transform:rotate(180deg)}
+.user-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:100;min-width:220px;padding:7px;background:var(--paper);border:1px solid var(--line);border-radius:17px;box-shadow:0 14px 35px rgba(68,77,71,.16)}
+.user-menu[hidden]{display:none}
+.user-menu-item{width:100%;border:0;background:transparent;color:var(--ink);padding:12px 11px;border-radius:11px;display:flex;align-items:center;gap:10px;text-align:left;font-weight:700;font-size:13px}
+.user-menu-item:hover{background:#F1F5F0}
+.user-menu-item span{flex:1}
+.user-menu-divider{height:1px;background:var(--line);margin:5px 6px}
+.user-menu-item.logout-menu-item{color:#8A6259}
+.user-menu-item.logout-menu-item:hover{background:#F8EDE9}
+.password-dialog{width:min(460px,calc(100% - 24px))}
+.password-dialog form{padding-top:4px}
+.password-dialog .password-wrap{position:relative}
+.password-dialog .password-wrap input{padding-right:48px}
+.password-dialog .toggle-password{position:absolute;right:7px;top:7px;border:0;background:transparent;width:38px;height:38px;border-radius:10px}
+.password-dialog .auth-message{min-height:20px;margin:10px 0 0 !important}
+@media(max-width:720px){
+  .user-bar{justify-content:flex-end;margin:-2px 4px 12px}
+  .user-menu{right:0;min-width:230px}
+  .user-menu-button{font-size:13px;padding:9px 11px}
+}

@@ -24,8 +24,17 @@
 </div>
   </header>
   <div id="userBar" class="user-bar" hidden>
-    <span id="currentUserName" aria-live="polite"></span>
-    <button type="button" id="logoutBtn" class="logout-button">Salir</button>
+    <div class="user-menu-wrap">
+      <button type="button" id="userMenuBtn" class="user-menu-button" aria-expanded="false" aria-controls="userMenu">
+        <span id="currentUserName" aria-live="polite"></span><span class="user-menu-chevron">▾</span>
+      </button>
+      <div id="userMenu" class="user-menu" hidden>
+        <button type="button" class="user-menu-item" id="menuReminders">🔔 <span>Mis recordatorios</span></button>
+        <button type="button" class="user-menu-item" id="menuPassword">🔑 <span>Cambiar contraseña</span></button>
+        <div class="user-menu-divider"></div>
+        <button type="button" class="user-menu-item logout-menu-item" id="logoutBtn">🚪 <span>Salir</span></button>
+      </div>
+    </div>
   </div>
 <span id="themeTitle" hidden>Nuestro año juntos</span>
   <nav class="tabs" aria-label="Secciones">
@@ -231,6 +240,36 @@
     </div>
   </dialog>
 
+  <dialog id="passwordDialog" class="identity-dialog password-dialog">
+    <div class="dialog-header">
+      <div>
+        <span class="eyebrow">SEGURIDAD</span>
+        <h2>Cambiar contraseña</h2>
+      </div>
+      <button class="close-button" id="closePassword" aria-label="Cerrar">×</button>
+    </div>
+    <p class="identity-intro">Elige una nueva contraseña para tu cuenta de CELAM.</p>
+    <form id="passwordForm">
+      <label>Nueva contraseña
+        <div class="password-wrap">
+          <input id="newPassword" type="password" autocomplete="new-password" minlength="6" required>
+          <button type="button" class="toggle-password" data-target="newPassword" aria-label="Mostrar contraseña">👁️</button>
+        </div>
+      </label>
+      <label>Repite la nueva contraseña
+        <div class="password-wrap">
+          <input id="newPassword2" type="password" autocomplete="new-password" minlength="6" required>
+          <button type="button" class="toggle-password" data-target="newPassword2" aria-label="Mostrar contraseña">👁️</button>
+        </div>
+      </label>
+      <p id="passwordMessage" class="auth-message" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button type="button" class="secondary-button" id="cancelPassword">Cancelar</button>
+        <button type="submit" class="primary-button">Cambiar contraseña</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="identityDialog" class="identity-dialog">
     <div class="dialog-header">
       <div>
@@ -349,7 +388,7 @@
     </div>
   </dialog>
 
-  <footer><span>CELAM</span><span>Los cambios se guardan solo en este dispositivo</span></footer>
+  <footer><span>CELAM</span><span>Tus datos personales se sincronizan con tu cuenta</span></footer>
 </div>
 
 <script src="data.js"></script>

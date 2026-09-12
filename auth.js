@@ -23,6 +23,15 @@ const logoutBtn = document.getElementById("logoutBtn");
 const userBar = document.getElementById("userBar");
 const currentUserName = document.getElementById("currentUserName");
 const currentUserRole = document.getElementById("currentUserRole");
+const userMenuBtn = document.getElementById("userMenuBtn");
+const userMenu = document.getElementById("userMenu");
+const menuReminders = document.getElementById("menuReminders");
+const menuPassword = document.getElementById("menuPassword");
+const passwordDialog = document.getElementById("passwordDialog");
+const passwordForm = document.getElementById("passwordForm");
+const closePassword = document.getElementById("closePassword");
+const cancelPassword = document.getElementById("cancelPassword");
+const passwordMessage = document.getElementById("passwordMessage");
 const profileBtn = document.getElementById("profileBtn");
 const profileDialog = document.getElementById("profileDialog");
 const closeProfileBtn = document.getElementById("closeProfileBtn");
@@ -114,7 +123,94 @@ forgotPassword?.addEventListener("click", async () => {
   }
 });
 
+function closeUserMenu(){
+  if(!userMenu)return;
+  userMenu.hidden=true;
+  userMenuBtn?.setAttribute("aria-expanded","false");
+}
+
+function openUserMenu(){
+  if(!userMenu)return;
+  userMenu.hidden=false;
+  userMenuBtn?.setAttribute("aria-expanded","true");
+}
+
+userMenuBtn?.addEventListener("click", (event)=>{
+  event.stopPropagation();
+  if(userMenu?.hidden) openUserMenu(); else closeUserMenu();
+});
+
+document.addEventListener("click", (event)=>{
+  if(userMenu && !userMenu.hidden && !event.target.closest(".user-menu-wrap")) closeUserMenu();
+});
+
+document.addEventListener("keydown", (event)=>{
+  if(event.key === "Escape") closeUserMenu();
+});
+
+menuReminders?.addEventListener("click", ()=>{
+  closeUserMenu();
+  if(typeof window.switchView === "function") window.switchView("reminders");
+  else document.querySelector('[data-view="reminders"]')?.click();
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+
+function showPasswordMessage(message="", error=false){
+  if(!passwordMessage)return;
+  passwordMessage.textContent=message;
+  passwordMessage.classList.toggle("error",!!error);
+  passwordMessage.classList.toggle("success",!error && !!message);
+}
+
+function openPasswordDialog(){
+  closeUserMenu();
+  passwordForm?.reset();
+  showPasswordMessage("");
+  if(passwordDialog && !passwordDialog.open) passwordDialog.showModal();
+}
+
+menuPassword?.addEventListener("click", openPasswordDialog);
+closePassword?.addEventListener("click", ()=>passwordDialog?.close());
+cancelPassword?.addEventListener("click", ()=>passwordDialog?.close());
+
+passwordForm?.addEventListener("submit", async (event)=>{
+  event.preventDefault();
+  showPasswordMessage("");
+  const p1=document.getElementById("newPassword")?.value || "";
+  const p2=document.getElementById("newPassword2")?.value || "";
+  if(p1.length < 6){
+    showPasswordMessage("La contraseña debe tener al menos 6 caracteres.",true);
+    return;
+  }
+  if(p1 !== p2){
+    showPasswordMessage("Las contraseñas no coinciden.",true);
+    return;
+  }
+  const user=auth.currentUser;
+  if(!user){
+    showPasswordMessage("No hay una sesión iniciada.",true);
+    return;
+  }
+  try{
+    await user.updatePassword(p1);
+    showPasswordMessage("Contraseña cambiada correctamente.",false);
+    setTimeout(()=>passwordDialog?.close(),900);
+  }catch(error){
+    if(error?.code === "auth/requires-recent-login"){
+      try{
+        await auth.sendPasswordResetEmail(user.email);
+        showPasswordMessage("Por seguridad, te hemos enviado un email para cambiarla. Revisa tu correo.",true);
+      }catch(resetError){
+        showPasswordMessage(friendlyAuthError(resetError),true);
+      }
+    }else{
+      showPasswordMessage(friendlyAuthError(error),true);
+    }
+  }
+});
+
 logoutBtn?.addEventListener("click", async () => {
+  closeUserMenu();
   try{
     await auth.signOut();
   }catch(error){

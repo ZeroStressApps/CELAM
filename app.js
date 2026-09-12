@@ -471,6 +471,7 @@ function switchView(view){
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===view));
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===view+"View"));
 }
+window.switchView=switchView;
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>switchView(t.dataset.view));
 $("#prevMonth").onclick=()=>{viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth()-1,1);render()};
 $("#nextMonth").onclick=()=>{viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth()+1,1);render()};
