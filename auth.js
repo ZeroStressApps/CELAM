@@ -27,6 +27,7 @@ const userMenuBtn = document.getElementById("userMenuBtn");
 const userMenu = document.getElementById("userMenu");
 const menuReminders = document.getElementById("menuReminders");
 const menuPassword = document.getElementById("menuPassword");
+const menuAdmin = document.getElementById("menuAdmin");
 const passwordDialog = document.getElementById("passwordDialog");
 const passwordForm = document.getElementById("passwordForm");
 const closePassword = document.getElementById("closePassword");
@@ -170,6 +171,13 @@ function openPasswordDialog(){
 }
 
 menuPassword?.addEventListener("click", openPasswordDialog);
+menuAdmin?.addEventListener("click", ()=>{
+  closeUserMenu();
+  if(window.CELAM_IS_ADMIN && typeof window.switchView === "function"){
+    window.switchView("admin");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+});
 closePassword?.addEventListener("click", ()=>passwordDialog?.close());
 cancelPassword?.addEventListener("click", ()=>passwordDialog?.close());
 
@@ -316,10 +324,16 @@ function findFamilyMemberByName(name){
 }
 
 
+function updateAdminMenu(isAdmin){
+  if(!menuAdmin)return;
+  menuAdmin.hidden=!isAdmin;
+}
+
 function setCurrentUserContext(user, familyMember = null, role = "usuario"){
   if(!user){
     window.CELAM_CURRENT_USER = null;
     window.CELAM_IS_ADMIN = false;
+    updateAdminMenu(false);
     return;
   }
 
@@ -334,6 +348,7 @@ function setCurrentUserContext(user, familyMember = null, role = "usuario"){
   };
 
   window.CELAM_IS_ADMIN = safeRole === "administrador";
+  updateAdminMenu(window.CELAM_IS_ADMIN);
 
   const nameEl = document.getElementById("currentUserName");
   if(nameEl) nameEl.textContent = familyMember?.name || "";

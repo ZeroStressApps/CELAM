@@ -753,6 +753,24 @@ async function renderRanking(mode="monthly"){
   }catch(e){console.error(e);box.innerHTML="<div class='empty'>No se ha podido cargar el ranking.</div>"}
 }
 
+async function renderAdminChallenges(){
+  const box=$("#adminChallengeList");
+  if(!box)return;
+  if(!isChallengeAdmin()){
+    box.innerHTML="<div class='empty'>Esta zona está reservada para administradores.</div>";
+    return;
+  }
+  if(!CELAM_CHALLENGES.length){
+    box.innerHTML=`<div class="empty">Todavía no hay retos creados. Usa <strong>＋ Crear reto</strong> para preparar el primero.</div>`;
+    return;
+  }
+  box.innerHTML=CELAM_CHALLENGES.map(c=>`<article class="admin-challenge-row">
+    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Reto CELAM")}</strong><small>⭐ ${esc(c.protagonistName||"Por decidir")}</small></div>
+    <button class="challenge-edit" data-admin-edit-challenge="${esc(c.id)}">✎ Editar</button>
+  </article>`).join("");
+  box.querySelectorAll("[data-admin-edit-challenge]").forEach(btn=>btn.onclick=()=>openChallengeDialog(CELAM_CHALLENGES.find(x=>x.id===btn.dataset.adminEditChallenge)));
+}
+
 $("#challengeRankingBtn")?.addEventListener("click",async()=>{
   $("#rankingPanel").hidden=false; await renderRanking("monthly");
   $("#rankingPanel").scrollIntoView({behavior:"smooth",block:"start"});
@@ -760,6 +778,7 @@ $("#challengeRankingBtn")?.addEventListener("click",async()=>{
 $("#closeRankingBtn")?.addEventListener("click",()=>$("#rankingPanel").hidden=true);
 document.querySelectorAll("[data-ranking]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-ranking]").forEach(x=>x.classList.toggle("active",x===b));renderRanking(b.dataset.ranking)});
 $("#addChallengeBtn")?.addEventListener("click",()=>openChallengeDialog());
+$("#adminAddChallengeBtn")?.addEventListener("click",()=>openChallengeDialog());
 $("#closeChallenge")?.addEventListener("click",()=>$("#challengeDialog").close());
 $("#cancelChallenge")?.addEventListener("click",()=>$("#challengeDialog").close());
 $("#challengeForm")?.addEventListener("submit",saveChallenge);
@@ -767,14 +786,19 @@ $("#closeScore")?.addEventListener("click",()=>$("#scoreDialog").close());
 
 const _switchView=switchView;
 switchView=function(view){
+  if(view==="admin" && !isChallengeAdmin()){
+    _switchView("calendar");
+    return;
+  }
   _switchView(view);
-  if(view==="challenges"){
-    document.getElementById("addChallengeBtn")?.toggleAttribute("hidden",!isChallengeAdmin());
-    loadChallenges();
+  if(view==="challenges") loadChallenges();
+  if(view==="admin"){
+    loadChallenges().then(renderAdminChallenges);
   }
 };
 
 window.CELAM_LOAD_CHALLENGES=loadChallenges;
+window.CELAM_RENDER_ADMIN_CHALLENGES=renderAdminChallenges;
 
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 render();

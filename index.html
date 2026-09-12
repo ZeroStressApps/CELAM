@@ -31,6 +31,7 @@
       <div id="userMenu" class="user-menu" hidden>
         <button type="button" class="user-menu-item" id="menuReminders">🔔 <span>Mis recordatorios</span></button>
         <button type="button" class="user-menu-item" id="menuPassword">🔑 <span>Cambiar contraseña</span></button>
+        <button type="button" class="user-menu-item admin-only" id="menuAdmin" hidden>⚙️ <span>Administración</span></button>
         <div class="user-menu-divider"></div>
         <button type="button" class="user-menu-item logout-menu-item" id="logoutBtn">🚪 <span>Salir</span></button>
       </div>
@@ -188,7 +189,6 @@
 
       <div class="challenge-toolbar">
         <button class="primary-button" id="challengeRankingBtn">🏆 Ver ranking</button>
-        <button class="secondary-button admin-only" id="addChallengeBtn" hidden>＋ Crear reto</button>
       </div>
 
       <div id="challengeList" class="challenge-list"></div>
@@ -203,6 +203,22 @@
           <button class="ranking-tab" data-ranking="annual">Anual</button>
         </div>
         <div id="rankingContent"></div>
+      </section>
+    </section>
+
+    <section id="adminView" class="view admin-view">
+      <section class="page-heading">
+        <span class="eyebrow">ADMINISTRACIÓN</span>
+        <h2>Administración de CELAM</h2>
+        <p>Desde aquí puedes preparar y gestionar los retos mensuales. Esta zona solo está disponible para administradores.</p>
+      </section>
+
+      <section class="admin-section">
+        <div class="section-heading compact">
+          <div><span class="eyebrow">RETOS CELAM</span><h2>Gestionar retos</h2></div>
+          <button class="primary-button" id="adminAddChallengeBtn">＋ Crear reto</button>
+        </div>
+        <div id="adminChallengeList" class="admin-challenge-list"></div>
       </section>
     </section>
 
