@@ -449,6 +449,21 @@ function openReminder(reminder=null){
     $("#reminderForm button[type=submit]").textContent="Guardar recordatorio";
   }
   $("#reminderDialog").showModal();
+
+  // Al crear un recordatorio nuevo, Cumpleaños debe quedar seleccionado
+  // aunque el navegador haya conservado el estado anterior del formulario.
+  if(!reminder){
+    const typeSelect = $("#reminderType");
+    if(typeSelect){
+      typeSelect.value = "birthday";
+      typeSelect.selectedIndex = 0;
+      typeSelect.dispatchEvent(new Event("change", {bubbles:true}));
+      requestAnimationFrame(()=>{
+        typeSelect.value = "birthday";
+        typeSelect.selectedIndex = 0;
+      });
+    }
+  }
 }
 function checkDueReminders(){
   const today=new Date(),key=dateKey(today.getFullYear(),today.getMonth()+1,today.getDate());
