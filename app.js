@@ -705,6 +705,7 @@ async function saveChallenge(e){
     await ref.set(payload,{merge:true});
     $("#challengeDialog").close();
     await loadChallenges();
+    await renderAdminChallenges();
   }catch(error){
     console.error(error);
     alert("No se ha podido guardar el reto. Revisa las reglas de Firestore.");
