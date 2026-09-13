@@ -464,6 +464,15 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 .challenge-status.done{background:#edf5ef}
 .ranking-panel{margin-top:24px;background:var(--paper);border-radius:26px;padding:22px;box-shadow:var(--shadow)}
 .ranking-tabs{display:flex;gap:8px;margin:8px 0 18px}
+.ranking-month-selector{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;gap:12px;margin:4px 0 14px;padding:10px 0 2px}
+.ranking-month-current{text-align:center;display:flex;flex-direction:column;gap:3px}
+.ranking-month-label{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700}
+.ranking-month-current strong{font-family:"Playfair Display",serif;font-size:24px;color:var(--ink)}
+.ranking-month-arrow{width:48px;height:44px;border:0;border-radius:14px;background:var(--white);color:var(--ink);font-size:30px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.ranking-month-arrow:disabled{opacity:.35;cursor:default}
+.ranking-month-select-wrap{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 18px}
+.ranking-month-select-wrap label{font-size:14px;font-weight:700;color:var(--muted)}
+.ranking-month-select-wrap select{border:1px solid var(--line);background:var(--white);border-radius:12px;padding:9px 12px;font:inherit;color:var(--ink);min-width:170px}
 .ranking-tab{border:0;background:var(--white);padding:10px 15px;border-radius:13px;font-weight:700;color:var(--muted)}
 .ranking-tab.active{background:var(--sage);color:#314A3B}
 .ranking-table{width:100%;border-collapse:collapse}
@@ -569,4 +578,12 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
     gap:12px;
     padding:16px 0;
   }
+}
+
+@media (max-width:640px){
+  .ranking-month-selector{grid-template-columns:42px minmax(0,1fr) 42px;gap:8px}
+  .ranking-month-arrow{width:42px;height:42px}
+  .ranking-month-current strong{font-size:21px}
+  .ranking-month-select-wrap{align-items:stretch;flex-direction:column;gap:6px}
+  .ranking-month-select-wrap select{width:100%}
 }
