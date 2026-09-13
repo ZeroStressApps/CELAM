@@ -517,3 +517,6 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 .admin-challenge-row strong{font-size:16px}
 .admin-challenge-row small{color:var(--muted)}
 @media(max-width:700px){.admin-challenge-row{align-items:stretch;flex-direction:column}.admin-challenge-row button{width:100%}}
+
+.form-error{margin:14px 24px 22px;padding:12px 14px;border-radius:13px;background:#fff1e7;border:1px solid #e2b7a3;color:#7d493c;font-weight:700;line-height:1.45}
+.form-error small{font-weight:500}

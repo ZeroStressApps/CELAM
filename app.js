@@ -738,8 +738,20 @@ async function openScoreDialog(challengeId){
         const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(input.dataset.scoreUid);
         batch.set(ref,{score,scoredAt:firebase.firestore.FieldValue.serverTimestamp(),scoredBy:currentUid()},{merge:true});
       });
-      try{await batch.commit();alert("Puntuaciones guardadas.");$("#scoreDialog").close();renderRanking(CURRENT_RANKING_MODE)}
-      catch(e){alert("No se han podido guardar las puntuaciones.")}
+      try{
+        await batch.commit();
+        $("#scoreSaveError")?.remove();
+        $("#scoreDialog").close();
+        await renderRanking(CURRENT_RANKING_MODE);
+      }catch(e){
+        console.error("CELAM: error al guardar puntuaciones",e);
+        const existing=$("#scoreSaveError");
+        if(existing){
+          existing.textContent="No se han podido guardar las puntuaciones. Comprueba que tienes permiso para puntuar este reto.";
+        }else{
+          $("#scoreList").insertAdjacentHTML("afterend",`<div id="scoreSaveError" class="form-error">⚠️ No se han podido guardar las puntuaciones.<br><small>Comprueba que eres administrador o protagonista de este reto y vuelve a intentarlo.</small></div>`);
+        }
+      }
     };
   }catch(e){
     console.error(e);
