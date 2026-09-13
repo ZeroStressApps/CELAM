@@ -531,14 +531,17 @@ async function loadChallenges(){
   const db=challengesDb();
   if(!db)return;
   try{
-    const snap=await db.collection("challenges").orderBy("month","desc").get();
-    CELAM_CHALLENGES=snap.docs.map(d=>({id:d.id,...d.data()}));
+    let query=db.collection("challenges");
+    if(!isChallengeAdmin()){
+      query=query.where("published","==",true);
+    }
+    const snap=await query.get();
+    CELAM_CHALLENGES=snap.docs
+      .map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>String(b.month||"").localeCompare(String(a.month||"")));
   }catch(error){
     console.error("CELAM: no se pudieron cargar los retos",error);
-    try{
-      const snap=await db.collection("challenges").get();
-      CELAM_CHALLENGES=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.month||"").localeCompare(String(a.month||"")));
-    }catch(e){CELAM_CHALLENGES=[]}
+    CELAM_CHALLENGES=[];
   }
   renderChallenges();
 }
@@ -693,7 +696,10 @@ async function saveChallenge(e){
     submissionUrl:$("#challengeSubmissionUrl").value.trim(),
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   };
-  if(!id)payload.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+  if(!id){
+    payload.published=false;
+    payload.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+  }
   try{
     const ref=id?db.collection("challenges").doc(id):db.collection("challenges").doc();
     await ref.set(payload,{merge:true});
@@ -747,7 +753,9 @@ async function renderRanking(mode="monthly"){
   box.innerHTML="<div class='empty'>Cargando ranking…</div>";
   try{
     const challengeDocs=await db.collection("challenges").get();
-    const challenges=challengeDocs.docs.map(d=>({id:d.id,...d.data()}));
+    const challenges=challengeDocs.docs
+      .map(d=>({id:d.id,...d.data()}))
+      .filter(c=>c.published===true);
     const totals={};
     challenges.forEach(c=>{
       const year=String(c.month||"").slice(0,4);
@@ -774,6 +782,33 @@ async function renderRanking(mode="monthly"){
   }catch(e){console.error(e);box.innerHTML="<div class='empty'>No se ha podido cargar el ranking.</div>"}
 }
 
+
+
+async function toggleChallengePublished(challengeId){
+  if(!isChallengeAdmin())return;
+  const challenge=CELAM_CHALLENGES.find(x=>x.id===challengeId);
+  if(!challenge)return;
+
+  const next=!challenge.published;
+  const action=next?"publicar":"despublicar";
+  const ok=confirm(`¿Quieres ${action} "${challenge.title||"este reto"}"?`);
+  if(!ok)return;
+
+  const db=challengesDb();
+  if(!db)return;
+
+  try{
+    await db.collection("challenges").doc(challengeId).set({
+      published:next,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    },{merge:true});
+    await loadChallenges();
+    await renderAdminChallenges();
+  }catch(error){
+    console.error(error);
+    alert("No se ha podido cambiar el estado de publicación. Revisa las reglas de Firestore.");
+  }
+}
 
 async function deleteChallenge(challengeId){
   if(!isChallengeAdmin())return;
@@ -810,11 +845,14 @@ async function renderAdminChallenges(){
     return;
   }
   box.innerHTML=CELAM_CHALLENGES.map(c=>`<article class="admin-challenge-row">
-    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Reto CELAM")}</strong><small>⭐ ${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</small></div>
-    <div class="admin-challenge-actions"><button class="challenge-edit" data-admin-edit-challenge="${esc(c.id)}">✎ Editar</button><button class="challenge-delete" data-admin-delete-challenge="${esc(c.id)}">🗑️ Eliminar</button></div>
+    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Reto CELAM")}</strong><small>⭐ ${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</small>
+      <span class="challenge-admin-status ${c.published?"published":"draft"}">${c.published?"🟢 Publicado":"⚪ Borrador"}</span>
+    </div>
+    <div class="admin-challenge-actions"><button class="challenge-publish" data-admin-publish-challenge="${esc(c.id)}">${c.published?"↩ Despublicar":"📢 Publicar"}</button><button class="challenge-edit" data-admin-edit-challenge="${esc(c.id)}">✎ Editar</button><button class="challenge-delete" data-admin-delete-challenge="${esc(c.id)}">🗑️ Eliminar</button></div>
   </article>`).join("");
   box.querySelectorAll("[data-admin-edit-challenge]").forEach(btn=>btn.onclick=()=>openChallengeDialog(CELAM_CHALLENGES.find(x=>x.id===btn.dataset.adminEditChallenge)));
   box.querySelectorAll("[data-admin-delete-challenge]").forEach(btn=>btn.onclick=()=>deleteChallenge(btn.dataset.adminDeleteChallenge));
+  box.querySelectorAll("[data-admin-publish-challenge]").forEach(btn=>btn.onclick=()=>toggleChallengePublished(btn.dataset.adminPublishChallenge));
 }
 
 $("#challengeRankingBtn")?.addEventListener("click",async()=>{
