@@ -463,22 +463,24 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 .challenge-status.pending{background:#fff1e7}
 .challenge-status.done{background:#edf5ef}
 .ranking-panel{margin-top:24px;background:var(--paper);border-radius:26px;padding:22px;box-shadow:var(--shadow)}
-.ranking-tabs{display:flex;gap:8px;margin:8px 0 18px}
-.ranking-month-selector{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;gap:12px;margin:4px 0 14px;padding:10px 0 2px}
-.ranking-month-current{text-align:center;display:flex;flex-direction:column;gap:3px}
-.ranking-month-label{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700}
-.ranking-month-current strong{font-family:"Playfair Display",serif;font-size:24px;color:var(--ink)}
-.ranking-month-arrow{width:48px;height:44px;border:0;border-radius:14px;background:var(--white);color:var(--ink);font-size:30px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.ranking-month-arrow:disabled{opacity:.35;cursor:default}
-.ranking-month-select-wrap{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 18px}
-.ranking-month-select-wrap label{font-size:14px;font-weight:700;color:var(--muted)}
-.ranking-month-select-wrap select{border:1px solid var(--line);background:var(--white);border-radius:12px;padding:9px 12px;font:inherit;color:var(--ink);min-width:170px}
-.ranking-tab{border:0;background:var(--white);padding:10px 15px;border-radius:13px;font-weight:700;color:var(--muted)}
-.ranking-tab.active{background:var(--sage);color:#314A3B}
-.ranking-table{width:100%;border-collapse:collapse}
-.ranking-table th,.ranking-table td{padding:11px 8px;border-bottom:1px solid var(--line);text-align:left}
-.ranking-table th:last-child,.ranking-table td:last-child{text-align:right}
-.ranking-place{width:46px;font-size:20px}
+.ranking-year-title{font-family:"Playfair Display",serif;font-size:22px;color:var(--ink);margin:2px 0 16px}
+.ranking-table-wrap{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--white)}
+.ranking-table{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}
+.ranking-table th,.ranking-table td{padding:12px 9px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+.ranking-table thead th{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:800;background:#faf8f2}
+.ranking-table tbody tr:last-child td{border-bottom:0}
+.ranking-name-head,.ranking-name{position:sticky;left:0;text-align:left!important;background:var(--white);z-index:2}
+.ranking-name-head{min-width:145px;z-index:3!important}
+.ranking-name{font-weight:700;min-width:145px}
+.ranking-month-col{width:58px}
+.ranking-month-col.has-challenge{color:var(--sage-dark);background:#f3f8f4}
+.ranking-month-col.no-challenge,.ranking-score-cell.no-challenge{background:#f4f3ef;color:#b6b1a6}
+.ranking-score-cell{font-size:15px}
+.ranking-score-cell strong{font-weight:800}
+.ranking-total-head,.ranking-total{position:sticky;right:0;background:#f1f5ee;z-index:2}
+.ranking-total-head{z-index:3!important;min-width:88px;color:var(--sage-dark)!important}
+.ranking-total{font-size:16px}
+.ranking-legend{font-size:12px;color:var(--muted);margin:10px 2px 0}
 .score-row{display:grid;grid-template-columns:1fr 90px;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .score-row strong{display:block}.score-row small{color:var(--muted)}
 .score-input{width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--white)}
@@ -581,9 +583,4 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 }
 
 @media (max-width:640px){
-  .ranking-month-selector{grid-template-columns:42px minmax(0,1fr) 42px;gap:8px}
-  .ranking-month-arrow{width:42px;height:42px}
-  .ranking-month-current strong{font-size:21px}
-  .ranking-month-select-wrap{align-items:stretch;flex-direction:column;gap:6px}
-  .ranking-month-select-wrap select{width:100%}
 }
