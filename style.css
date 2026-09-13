@@ -520,3 +520,53 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 
 .form-error{margin:14px 24px 22px;padding:12px 14px;border-radius:13px;background:#fff1e7;border:1px solid #e2b7a3;color:#7d493c;font-weight:700;line-height:1.45}
 .form-error small{font-weight:500}
+
+/* ===== MEJORA DE USABILIDAD: PUNTUACIONES ===== */
+.challenge-dialog{
+  width:min(760px,calc(100% - 32px));
+}
+.challenge-dialog .dialog-header{
+  padding:28px 34px 16px;
+}
+.challenge-dialog .challenge-note{
+  margin:0;
+  padding:0 34px 24px;
+  line-height:1.55;
+}
+.challenge-dialog #scoreList{
+  padding:0 34px 30px;
+}
+.challenge-dialog .score-row{
+  grid-template-columns:minmax(0,1fr) 100px;
+  gap:22px;
+  padding:18px 0;
+}
+.challenge-dialog .score-input{
+  box-sizing:border-box;
+  min-height:50px;
+  font-size:16px;
+}
+.challenge-dialog .dialog-actions{
+  margin-top:26px;
+  padding-top:4px;
+}
+
+@media(max-width:700px){
+  .challenge-dialog{
+    width:calc(100% - 20px);
+  }
+  .challenge-dialog .dialog-header{
+    padding:22px 20px 14px;
+  }
+  .challenge-dialog .challenge-note{
+    padding:0 20px 20px;
+  }
+  .challenge-dialog #scoreList{
+    padding:0 20px 24px;
+  }
+  .challenge-dialog .score-row{
+    grid-template-columns:minmax(0,1fr) 82px;
+    gap:12px;
+    padding:16px 0;
+  }
+}
