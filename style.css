@@ -629,3 +629,94 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 
 .audio-recorder{margin-top:14px;padding:16px;background:var(--paper);border:1px solid var(--line);border-radius:18px}.audio-recorder-title{font-weight:700;margin-bottom:4px}.audio-recorder-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.audio-recorder-actions .secondary-button{min-height:46px}.audio-recorder audio{width:100%;margin-top:12px}.share-public-note{margin:16px 0 0}.shared-entry-title{font-weight:700;font-family:"Playfair Display",serif;font-size:18px}.shared-entry-text{line-height:1.55;white-space:normal}.shared-entry-audio{width:min(100%,420px);margin-top:4px}
 @media(max-width:700px){.audio-recorder{padding:14px}.audio-recorder-actions{flex-direction:column}.audio-recorder-actions button{width:100%;min-height:50px}.shared-entry-audio{width:100%}}
+
+.month-filter{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:0 0 18px;
+  padding:12px 14px;
+  background:var(--paper);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+}
+.month-filter label{
+  font-weight:700;
+  color:var(--muted);
+  white-space:nowrap;
+}
+.month-filter select{
+  margin:0;
+  max-width:260px;
+}
+.protagonist-selector-actions{
+  display:flex;
+  margin-top:8px;
+}
+.protagonist-selector-actions .secondary-button{
+  padding:8px 11px;
+  font-size:13px;
+}
+.shared-hearts{
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.shared-heart-btn{
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:11px;
+  background:var(--lavender);
+  color:var(--ink);
+  font-size:23px;
+  line-height:1;
+  cursor:pointer;
+}
+.shared-heart-btn.active{
+  background:var(--sage);
+}
+.shared-heart-btn:hover{
+  transform:translateY(-1px);
+}
+@media(max-width:720px){
+  .month-filter{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .month-filter select{
+    max-width:none;
+  }
+}
+
+.protagonist-check-list{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:7px;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:var(--white);
+  max-height:260px;
+  overflow:auto;
+}
+.protagonist-option{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:9px 10px;
+  border-radius:10px;
+  background:#faf9f5;
+  cursor:pointer;
+  font-weight:700;
+}
+.protagonist-option input{
+  width:20px;
+  height:20px;
+  margin:0;
+  flex:0 0 auto;
+}
+@media(max-width:720px){
+  .protagonist-check-list{grid-template-columns:1fr}
+}
