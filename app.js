@@ -605,7 +605,7 @@ async function renderChallengeCard(c){
   return `<article class="challenge-card">
     <div class="challenge-card-header">
       <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><h3>${esc(c.title||"Locura CELAM")}</h3>
-      <div class="challenge-meta">⭐ Protagonista: <strong>${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</strong></div></div>
+      ${((c.protagonistNames||[c.protagonistName]).filter(Boolean).length ? `<div class="challenge-meta">⭐ Protagonista: <strong>${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", "))}</strong></div>` : "")}</div>
       <span class="challenge-status ${me?"done":"pending"}">${me?"✓ Participación registrada":"🟢 Abierto"}</span>
     </div>
     <div class="challenge-description">${esc(c.description||"")}</div>
@@ -1010,7 +1010,7 @@ async function renderAdminChallenges(){
     return;
   }
   box.innerHTML=CELAM_CHALLENGES.map(c=>`<article class="admin-challenge-row">
-    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Locura CELAM")}</strong><small>⭐ ${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</small>
+    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Locura CELAM")}</strong>${((c.protagonistNames||[c.protagonistName]).filter(Boolean).length ? `<small>⭐ ${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", "))}</small>` : "")}
       <span class="challenge-admin-status ${c.published?"published":"draft"}">${c.published?"🟢 Publicado":"⚪ Borrador"}</span>
     </div>
     <div class="admin-challenge-actions"><button class="challenge-publish" data-admin-publish-challenge="${esc(c.id)}">${c.published?"↩ Despublicar":"📢 Publicar"}</button><button class="challenge-edit" data-admin-edit-challenge="${esc(c.id)}">✎ Editar</button><button class="challenge-delete" data-admin-delete-challenge="${esc(c.id)}">🗑️ Eliminar</button></div>
