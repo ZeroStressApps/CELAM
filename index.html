@@ -348,7 +348,7 @@
 
   <dialog id="challengeDialog" class="challenge-dialog">
     <div class="dialog-header">
-      <div><span class="eyebrow">NUESTRAS LOCURAS</span><h2 id="challengeDialogTitle">Crear locura</h2></div>
+      <div><span class="eyebrow">NUESTRAS LOCURAS</span><h2 id="challengeDialogTitle">Crear locura</h2><p class="challenge-form-intro">Cuenta qué habéis hecho y quién ha participado.</p></div>
       <button class="close-button" id="closeChallenge" aria-label="Cerrar">×</button>
     </div>
     <form id="challengeForm">
@@ -360,22 +360,24 @@
         <input id="challengeMonth" type="month">
         <small class="field-help">El año de la locura lo determina el mes que elijas.</small>
       </label>
-      <label>Protagonistas del mes
-        <div id="challengeProtagonist" class="protagonist-check-list" aria-describedby="challengeProtagonistHelp"></div>
-        <div class="protagonist-selector-actions">
-          <button type="button" class="secondary-button" id="clearChallengeProtagonists">✕ Quitar todos</button>
+      <label class="challenge-protagonists-field">
+        <span class="challenge-field-title">¿Quiénes han participado?</span>
+        <div class="challenge-field-heading">
+          <small class="field-help">Puedes seleccionar varias personas.</small>
+          <button type="button" class="secondary-button" id="clearChallengeProtagonists">Quitar todos</button>
         </div>
-        <small id="challengeProtagonistHelp" class="field-help">Marca o desmarca a cada protagonista con un clic. No hay límite.</small>
-        <small class="field-help">Puedes dejar datos pendientes y completarlos más adelante.</small>
+        <div id="challengeProtagonist" class="protagonist-check-list" aria-describedby="challengeProtagonistHelp"></div>
+        <small id="challengeProtagonistHelp" class="field-help">Puedes cambiar la selección cuando quieras.</small>
       </label>
-      <label>¿En qué consiste?
-        <textarea id="challengeDescription" rows="4" placeholder="Explica la actividad de forma sencilla."></textarea>
+      <label class="challenge-description-field">
+        <span class="challenge-field-title">¿En qué consiste?</span>
+        <textarea id="challengeDescription" rows="5" placeholder="Cuenta brevemente qué hicisteis..."></textarea>
       </label>
-      <label>Vídeo (YouTube)
-        <input id="challengeVideoUrl" type="url" placeholder="https://www.youtube.com/...">
+      <label>Vídeo de la locura <span class="challenge-optional">(opcional)</span>
+        <input id="challengeVideoUrl" type="url" placeholder="Pega aquí el enlace de YouTube...">
       </label>
-      <label>Enlace para subir la participación
-        <input id="challengeSubmissionUrl" type="url" placeholder="https://...">
+      <label>Enlace para subir la participación <span class="challenge-optional">(opcional)</span>
+        <input id="challengeSubmissionUrl" type="url" placeholder="Pega aquí el enlace para subirla...">
       </label>
       <div class="dialog-actions">
         <button type="button" class="secondary-button" id="cancelChallenge">Cancelar</button>
