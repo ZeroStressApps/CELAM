@@ -63,19 +63,17 @@ function setAuthMode(isRegister){
     element.classList.toggle("hidden", !isRegister);
   });
 
-  authSubmit.textContent = isRegister ? "Crear cuenta" : "Entrar";
-  forgotPassword.classList.toggle("hidden", isRegister);
-  authTitle.textContent = isRegister ? "Crear cuenta" : "Entrar en CELAM";
-  authSubtitle.textContent = isRegister
-    ? "Crea tu cuenta para usar CELAM desde tus dispositivos."
-    : "Inicia sesión para acceder a tu calendario familiar.";
+  authSubmit.textContent = "Entrar";
+  forgotPassword.classList.remove("hidden");
+authTitle.textContent = "Entrar en CELAM";
+authSubtitle.textContent =
+  "Inicia sesión para acceder a tu calendario familiar.";
 
   const password = document.getElementById("authPassword");
   password.autocomplete = isRegister ? "new-password" : "current-password";
   password.value = "";
 
-  const password2 = document.getElementById("authPassword2");
-  password2.value = "";
+
   showAuthMessage("");
 }
 
@@ -89,21 +87,10 @@ authForm?.addEventListener("submit", async (event) => {
 
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
-  const password2 = document.getElementById("authPassword2").value;
-
-  if(registerMode && password !== password2){
-    showAuthMessage("Las contraseñas no coinciden.");
-    return;
-  }
 
   try{
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-
-    if(registerMode){
-      await auth.createUserWithEmailAndPassword(email, password);
-    }else{
-      await auth.signInWithEmailAndPassword(email, password);
-    }
+    await auth.signInWithEmailAndPassword(email, password);
   }catch(error){
     showAuthMessage(friendlyAuthError(error));
   }
