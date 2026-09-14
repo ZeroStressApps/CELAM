@@ -516,7 +516,7 @@ $("#closeBirthdayPopup")?.addEventListener("click",()=>$("#birthdayPopup").close
 
 
 /* =========================
-   RETOS CELAM
+   NUESTRAS LOCURAS
    ========================= */
 let CELAM_CHALLENGES=[];
 let CURRENT_RANKING_MODE="monthly";
@@ -541,7 +541,7 @@ async function loadChallenges(){
       .map(d=>({id:d.id,...d.data()}))
       .sort((a,b)=>String(b.month||"").localeCompare(String(a.month||"")));
   }catch(error){
-    console.error("CELAM: no se pudieron cargar los retos",error);
+    console.error("CELAM: no se pudieron cargar las locuras",error);
     CELAM_CHALLENGES=[];
   }
   renderChallenges();
@@ -604,7 +604,7 @@ async function renderChallengeCard(c){
   const video=validUrl(c.videoUrl), upload=validUrl(c.submissionUrl);
   return `<article class="challenge-card">
     <div class="challenge-card-header">
-      <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><h3>${esc(c.title||"Reto CELAM")}</h3>
+      <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><h3>${esc(c.title||"Locura CELAM")}</h3>
       <div class="challenge-meta">⭐ Protagonista: <strong>${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</strong></div></div>
       <span class="challenge-status ${me?"done":"pending"}">${me?"✓ Participación registrada":"🟢 Abierto"}</span>
     </div>
@@ -622,10 +622,10 @@ async function renderChallengeCard(c){
 async function renderChallenges(){
   const c=$("#challengeList"); if(!c)return;
   if(!currentUid()){
-    c.innerHTML=`<div class="empty">Inicia sesión para ver los retos de CELAM.</div>`;return;
+    c.innerHTML=`<div class="empty">Inicia sesión para ver las locuras de CELAM.</div>`;return;
   }
   if(!CELAM_CHALLENGES.length){
-    c.innerHTML=`<div class="empty">Todavía no hay ningún reto publicado. Cuando llegue el primero, aparecerá aquí.</div>`;
+    c.innerHTML=`<div class="empty">Todavía no hay ningún locura publicada. Cuando llegue el primero, aparecerá aquí.</div>`;
     return;
   }
   const cards=await Promise.all(CELAM_CHALLENGES.map(renderChallengeCard));
@@ -662,11 +662,11 @@ function openChallengeDialog(challenge=null){
   populateChallengeProtagonists(getChallengeProtagonistIds(challenge));
   const now=new Date();
   $("#challengeMonth").value=challenge?.month||`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  $("#challengeTitle").value=challenge?.title||`Reto del mes de ${MONTHS[Number($("#challengeMonth").value.split("-")[1])-1]||""}`;
+  $("#challengeTitle").value=challenge?.title||`Locura del mes de ${MONTHS[Number($("#challengeMonth").value.split("-")[1])-1]||""}`;
   $("#challengeDescription").value=challenge?.description||"";
   $("#challengeVideoUrl").value=challenge?.videoUrl||"";
   $("#challengeSubmissionUrl").value=challenge?.submissionUrl||"";
-  $("#challengeDialogTitle").textContent=challenge?"Modificar reto":"Crear reto";
+  $("#challengeDialogTitle").textContent=challenge?"Modificar locura":"Crear locura";
   $("#challengeDialog").showModal();
 }
 async function saveChallenge(e){
@@ -683,7 +683,7 @@ async function saveChallenge(e){
       if(!v)return "";
       const parts=v.split("-");
       const monthName=MONTHS[Number(parts[1])-1]||"";
-      return monthName ? `Reto del mes de ${monthName}` : "";
+      return monthName ? `Locura del mes de ${monthName}` : "";
     })(),
     month:$("#challengeMonth").value,
     protagonistIds,
@@ -709,7 +709,7 @@ async function saveChallenge(e){
     await renderAdminChallenges();
   }catch(error){
     console.error(error);
-    alert("No se ha podido guardar el reto. Revisa las reglas de Firestore.");
+    alert("No se ha podido guardar la locura. Revisa las reglas de Firestore.");
   }
 }
 async function openScoreDialog(challengeId){
@@ -749,9 +749,9 @@ async function openScoreDialog(challengeId){
         console.error("CELAM: error al guardar puntuaciones",e);
         const existing=$("#scoreSaveError");
         if(existing){
-          existing.textContent="No se han podido guardar las puntuaciones. Comprueba que tienes permiso para puntuar este reto.";
+          existing.textContent="No se han podido guardar las puntuaciones. Comprueba que tienes permiso para puntuar esta locura.";
         }else{
-          $("#scoreList").insertAdjacentHTML("afterend",`<div id="scoreSaveError" class="form-error">⚠️ No se han podido guardar las puntuaciones.<br><small>Comprueba que eres administrador o protagonista de este reto y vuelve a intentarlo.</small></div>`);
+          $("#scoreList").insertAdjacentHTML("afterend",`<div id="scoreSaveError" class="form-error">⚠️ No se han podido guardar las puntuaciones.<br><small>Comprueba que eres administrador o protagonista de esta locura y vuelve a intentarlo.</small></div>`);
         }
       }
     };
@@ -779,7 +779,7 @@ async function renderRanking(mode="monthly", selectedMonth=""){
         .sort((a,b)=>String(a.month).localeCompare(String(b.month)));
       if(!monthlyChallenges.length){
         CURRENT_RANKING_MONTH="";
-        box.innerHTML="<div class='empty'>Todavía no hay retos publicados para consultar el ranking mensual.</div>";
+        box.innerHTML="<div class='empty'>Todavía no hay locuras publicadas para consultar el ranking mensual.</div>";
         return;
       }
       const availableMonths=[...new Set(monthlyChallenges.map(c=>c.month))];
@@ -858,7 +858,7 @@ async function toggleChallengePublished(challengeId){
 
   const next=!challenge.published;
   const action=next?"publicar":"despublicar";
-  const ok=confirm(`¿Quieres ${action} "${challenge.title||"este reto"}"?`);
+  const ok=confirm(`¿Quieres ${action} "${challenge.title||"esta locura"}"?`);
   if(!ok)return;
 
   const db=challengesDb();
@@ -882,7 +882,7 @@ async function deleteChallenge(challengeId){
   const challenge=CELAM_CHALLENGES.find(x=>x.id===challengeId);
   if(!challenge)return;
 
-  const title=challenge.title||"este reto";
+  const title=challenge.title||"esta locura";
   const ok=confirm(`¿Quieres eliminar "${title}"?\n\nEsta acción no se puede deshacer.`);
   if(!ok)return;
 
@@ -896,7 +896,7 @@ async function deleteChallenge(challengeId){
     renderChallenges();
   }catch(error){
     console.error(error);
-    alert("No se ha podido eliminar el reto. Revisa las reglas de Firestore.");
+    alert("No se ha podido eliminar la locura. Revisa las reglas de Firestore.");
   }
 }
 
@@ -908,11 +908,11 @@ async function renderAdminChallenges(){
     return;
   }
   if(!CELAM_CHALLENGES.length){
-    box.innerHTML=`<div class="empty">Todavía no hay retos creados. Usa <strong>＋ Crear reto</strong> para preparar el primero.</div>`;
+    box.innerHTML=`<div class="empty">Todavía no hay locuras creadas. Usa <strong>＋ Crear locura</strong> para preparar el primero.</div>`;
     return;
   }
   box.innerHTML=CELAM_CHALLENGES.map(c=>`<article class="admin-challenge-row">
-    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Reto CELAM")}</strong><small>⭐ ${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</small>
+    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Locura CELAM")}</strong><small>⭐ ${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", ")||"Por decidir")}</small>
       <span class="challenge-admin-status ${c.published?"published":"draft"}">${c.published?"🟢 Publicado":"⚪ Borrador"}</span>
     </div>
     <div class="admin-challenge-actions"><button class="challenge-publish" data-admin-publish-challenge="${esc(c.id)}">${c.published?"↩ Despublicar":"📢 Publicar"}</button><button class="challenge-edit" data-admin-edit-challenge="${esc(c.id)}">✎ Editar</button><button class="challenge-delete" data-admin-delete-challenge="${esc(c.id)}">🗑️ Eliminar</button></div>

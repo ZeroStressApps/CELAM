@@ -41,7 +41,7 @@
   <nav class="tabs" aria-label="Secciones">
     <button class="tab active" data-view="calendar">📅 Calendario</button>
     <button class="tab" data-view="agenda">👨‍👩‍👧 Agenda</button>
-    <button class="tab" data-view="challenges">🏆 Retos</button>
+    <button class="tab" data-view="challenges">🤪 Nuestras locuras</button>
     <button class="tab" data-view="tree">🪾 Árbol</button>
   </nav>
 
@@ -178,9 +178,9 @@
 
     <section id="challengesView" class="view">
       <section class="page-heading">
-        <span class="eyebrow">UN RETO CADA MES</span>
-        <h2>Retos CELAM</h2>
-        <p>Todo el reto en un mismo sitio: vídeo, participación y ranking.</p>
+        <span class="eyebrow">NUESTRAS LOCURAS</span>
+        <h2>Nuestras locuras</h2>
+        <p>Todo lo de cada año en un mismo sitio.</p>
       </section>
 
       <div class="challenge-toolbar">
@@ -206,13 +206,13 @@
       <section class="page-heading">
         <span class="eyebrow">ADMINISTRACIÓN</span>
         <h2>Administración de CELAM</h2>
-        <p>Desde aquí puedes preparar y gestionar los retos mensuales. Esta zona solo está disponible para administradores.</p>
+        <p>Desde aquí puedes preparar y gestionar las locuras mensuales. Esta zona solo está disponible para administradores.</p>
       </section>
 
       <section class="admin-section">
         <div class="section-heading compact">
-          <div><span class="eyebrow">RETOS CELAM</span><h2>Gestionar retos</h2></div>
-          <button class="primary-button" id="adminAddChallengeBtn">＋ Crear reto</button>
+          <div><span class="eyebrow">NUESTRAS LOCURAS</span><h2>Gestionar nuestras locuras</h2></div>
+          <button class="primary-button" id="adminAddChallengeBtn">＋ Crear locura</button>
         </div>
         <div id="adminChallengeList" class="admin-challenge-list"></div>
       </section>
@@ -331,12 +331,12 @@
 
   <dialog id="challengeDialog" class="challenge-dialog">
     <div class="dialog-header">
-      <div><span class="eyebrow">RETOS CELAM</span><h2 id="challengeDialogTitle">Crear reto</h2></div>
+      <div><span class="eyebrow">NUESTRAS LOCURAS</span><h2 id="challengeDialogTitle">Crear locura</h2></div>
       <button class="close-button" id="closeChallenge" aria-label="Cerrar">×</button>
     </div>
     <form id="challengeForm">
       <input type="hidden" id="challengeId">
-      <label>Título del reto
+      <label>Título de la locura
         <input id="challengeTitle" type="text" placeholder="Ej. Reto del mes de agosto">
       </label>
       <label>Mes
@@ -348,9 +348,9 @@
         <small class="field-help">Puedes dejar datos pendientes y completarlos más adelante.</small>
       </label>
       <label>¿En qué consiste?
-        <textarea id="challengeDescription" rows="4" placeholder="Explica el reto de forma sencilla."></textarea>
+        <textarea id="challengeDescription" rows="4" placeholder="Explica la actividad de forma sencilla."></textarea>
       </label>
-      <label>Vídeo del reto (YouTube)
+      <label>Vídeo (YouTube)
         <input id="challengeVideoUrl" type="url" placeholder="https://www.youtube.com/...">
       </label>
       <label>Enlace para subir la participación
@@ -358,7 +358,7 @@
       </label>
       <div class="dialog-actions">
         <button type="button" class="secondary-button" id="cancelChallenge">Cancelar</button>
-        <button type="submit" class="primary-button">Guardar reto</button>
+        <button type="submit" class="primary-button">Guardar locura</button>
       </div>
     </form>
   </dialog>
@@ -368,7 +368,7 @@
       <div><span class="eyebrow">PUNTUAR PARTICIPACIONES</span><h2 id="scoreDialogTitle">Puntuaciones</h2></div>
       <button class="close-button" id="closeScore" aria-label="Cerrar">×</button>
     </div>
-    <p class="challenge-note">Los administradores y los protagonistas de este reto pueden puntuar de 0 a 10. Los puntos se guardan en CELAM y alimentan el ranking mensual y anual.</p>
+    <p class="challenge-note">Los administradores y los protagonistas de esta locura pueden puntuar de 0 a 10. Los puntos se guardan en CELAM y alimentan el ranking mensual y anual.</p>
     <div id="scoreList"></div>
   </dialog>
 

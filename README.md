@@ -6,7 +6,7 @@ Calendario familiar CELAM · Club Exclusivo de Locos A Mogollón.
 
 ## Cambios de esta versión
 
-- Eliminados los retos por ahora.
+- La sección Nuestras locuras está preparada para actividades familiares de cada año.
 - Calendario automático por año.
 - Cumpleaños y santos.
 - Nueva sección Agenda familiar.
