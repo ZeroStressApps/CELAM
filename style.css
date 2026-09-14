@@ -775,3 +775,84 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 @media(max-width:720px){
   .protagonist-check-list{grid-template-columns:1fr!important;max-height:210px!important}
 }
+
+/* Usabilidad: formulario de anécdota */
+#shareParticipationText{
+  width:100%;
+  min-height:150px;
+  resize:vertical;
+  box-sizing:border-box;
+}
+
+/* Usabilidad: anécdotas compartidas */
+.shared-entry{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--paper);
+  padding:16px;
+  margin:12px 0 0;
+  align-items:flex-start;
+}
+.shared-entry + .shared-entry{
+  margin-top:12px;
+}
+.shared-entry-person{
+  display:inline-flex;
+  align-items:center;
+  width:fit-content;
+  padding:7px 11px;
+  border-radius:12px;
+  background:var(--sage);
+  color:#314A3B;
+  font-size:16px;
+  font-weight:800;
+  margin-bottom:4px;
+}
+.shared-entry-title{
+  margin-top:2px;
+}
+.shared-entry-photos{
+  margin-top:10px;
+}
+.shared-photo-open{
+  border:0;
+  padding:0;
+  background:transparent;
+  border-radius:12px;
+  cursor:pointer;
+  overflow:hidden;
+}
+.shared-photo-open img{
+  display:block;
+  transition:transform .15s ease;
+}
+.shared-photo-open:hover img,
+.shared-photo-open:focus-visible img{
+  transform:scale(1.03);
+}
+.shared-entry-audio-wrap{
+  margin-top:8px;
+  width:min(100%,420px);
+  padding:10px 12px 12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--white);
+}
+.shared-entry-audio-label{
+  font-weight:800;
+  margin-bottom:6px;
+}
+.shared-entry-audio{
+  display:block;
+  width:100%;
+  margin-top:0;
+}
+@media(max-width:700px){
+  .shared-entry{
+    padding:14px;
+  }
+  .shared-entry-audio-wrap{
+    width:100%;
+    box-sizing:border-box;
+  }
+}

@@ -1036,11 +1036,11 @@ async function renderSharedContent(){
           return `
           <article class="shared-entry">
             <div class="shared-entry-body">
-              <strong>${esc(p.name||"Participante")}</strong>
+              <div class="shared-entry-person">👤 ${esc(p.name||"Participante")}</div>
               ${p.title?`<div class="shared-entry-title">${esc(p.title)}</div>`:""}
               ${p.text?`<div class="shared-entry-text">${esc(p.text).replace(/\n/g,"<br>")}</div>`:""}
-              ${p.audioData?`<audio class="shared-entry-audio" controls src="${esc(p.audioData)}"></audio>`:""}
-              ${Array.isArray(p.photoData)&&p.photoData.length?`<div class="shared-entry-photos">${p.photoData.map((src,i)=>`<img src="${esc(src)}" alt="Foto compartida ${i+1}" loading="lazy">`).join("")}</div>`:""}
+              ${p.audioData?`<div class="shared-entry-audio-wrap"><div class="shared-entry-audio-label">🎧 Escuchar audio</div><audio class="shared-entry-audio" controls src="${esc(p.audioData)}"></audio></div>`:""}
+              ${Array.isArray(p.photoData)&&p.photoData.length?`<div class="shared-entry-photos">${p.photoData.map((src,i)=>`<button type="button" class="shared-photo-open" data-photo-src="${esc(src)}" aria-label="Abrir foto ${i+1}"><img src="${esc(src)}" alt="Foto compartida ${i+1}" loading="lazy"></button>`).join("")}</div>`:""}
               ${p.submissionUrl?`<a class="shared-submission-link" href="${esc(p.submissionUrl)}" target="_blank" rel="noopener noreferrer">📎 Ver su participación</a>`:""}
             </div>
             <div class="shared-entry-action">
@@ -1062,6 +1062,12 @@ async function renderSharedContent(){
   });
   box.querySelectorAll("[data-like-challenge]").forEach(btn=>{
     btn.onclick=()=>toggleSharedLike(btn.dataset.likeChallenge,btn.dataset.likeParticipant,Number(btn.dataset.likeSlot));
+  });
+  box.querySelectorAll("[data-photo-src]").forEach(btn=>{
+    btn.onclick=()=>{
+      const src=btn.dataset.photoSrc;
+      if(src) window.open(src,"_blank","noopener,noreferrer");
+    };
   });
 }
 
