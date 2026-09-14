@@ -103,10 +103,11 @@ forgotPassword?.addEventListener("click", async () => {
     return;
   }
 
-  try{
-    await auth.sendPasswordResetEmail(email);
-    showAuthMessage("Te hemos enviado un email para restablecer la contraseña.", false);
-  }catch(error){
+ try{
+  auth.languageCode = "es";
+  await auth.sendPasswordResetEmail(email);
+  showAuthMessage("Te hemos enviado un email para restablecer la contraseña.", false);
+}catch(error){
     showAuthMessage(friendlyAuthError(error));
   }
 });
