@@ -631,7 +631,14 @@ async function renderChallenges(){
     c.innerHTML=`<div class="empty">Todavía no hay ningún locura publicada. Cuando llegue el primero, aparecerá aquí.</div>`;
     return;
   }
-  const cards=await Promise.all(CELAM_CHALLENGES.map(renderChallengeCard));
+  // La pestaña pública muestra SIEMPRE solo locuras publicadas, también para administradores.
+  // Administración usa CELAM_CHALLENGES completo para gestionar borradores y publicaciones.
+  const publicChallenges=CELAM_CHALLENGES.filter(challenge=>challenge.published===true);
+  if(!publicChallenges.length){
+    c.innerHTML=`<div class="empty">Todavía no hay ninguna locura publicada. Cuando haya una, aparecerá aquí.</div>`;
+    return;
+  }
+  const cards=await Promise.all(publicChallenges.map(renderChallengeCard));
   c.innerHTML=cards.join("");
   c.querySelectorAll("[data-mark-participation]").forEach(btn=>btn.onclick=async()=>{
     const id=btn.dataset.markParticipation;
