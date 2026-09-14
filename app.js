@@ -657,9 +657,13 @@ async function saveMyParticipation(e){
     await renderSharedContent();
     if(isChallengeAdmin())await renderAdminParticipations();
   }catch(e){
-    console.error("CELAM: no se pudo publicar la participación",e);
-    alert("No se ha podido publicar tu locura. Comprueba la conexión e inténtalo de nuevo.");
-  }finally{if(btn)btn.disabled=false;}
+    console.error("CELAM: no se pudo publicar la participación", e);
+    alert(
+      `Error Firebase: ${e?.code || "desconocido"}\\n\\n${e?.message || e}`
+    );
+  }finally{
+    if(btn)btn.disabled=false;
+  }
 }
 
 
