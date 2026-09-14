@@ -551,6 +551,11 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 .challenge-dialog{
   width:min(760px,calc(100% - 32px));
 }
+.challenge-dialog #challengeDescription{
+  display:block;
+  box-sizing:border-box;
+  width:100%;
+}
 .challenge-dialog .dialog-header{
   padding:28px 34px 16px;
 }
