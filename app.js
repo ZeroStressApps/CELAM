@@ -814,7 +814,7 @@ async function renderChallenges(){
       </select>
     </div>
     <div id="challengeMonthCards" class="challenge-list"></div>
-    <div class="challenge-shared-below"><button class="primary-button" id="challengeSharedBtn">💚 Locuras compartidas</button></div>`;
+    <div class="challenge-shared-below"><button class="primary-button" id="challengeSharedBtn">💚 Locuras compartidas</button><button class="secondary-button" id="challengeRankingBtn">🏆 Ver ranking</button></div>`;
   const cards=await Promise.all(visibleChallenges.map(renderChallengeCard));
   $("#challengeMonthCards").innerHTML=cards.join("");
   $("#challengeMonthSelect")?.addEventListener("change",e=>{
@@ -1347,7 +1347,8 @@ async function renderAdminChallenges(){
   box.querySelectorAll("[data-admin-publish-challenge]").forEach(btn=>btn.onclick=()=>toggleChallengePublished(btn.dataset.adminPublishChallenge));
 }
 
-$("#challengeRankingBtn")?.addEventListener("click",async()=>{
+document.addEventListener("click",async e=>{
+  if(!e.target.closest("#challengeRankingBtn"))return;
   $("#rankingPanel").hidden=false; await renderRanking("monthly");
   $("#rankingPanel").scrollIntoView({behavior:"smooth",block:"start"});
 });
