@@ -579,7 +579,6 @@ let CELAM_PHOTO_DATA_URLS=[];
 
 const CELAM_MAX_PHOTOS=3;
 const CELAM_MAX_PHOTO_BYTES=250000;
-const CELAM_MAX_INPUT_PHOTO_BYTES=10000000;
 const CELAM_MAX_MEDIA_BYTES=600000;
 
 function resetSharePhotos(){
@@ -596,7 +595,6 @@ function dataUrlBytes(dataUrl){
 function fileToCompressedDataUrl(file){
   return new Promise((resolve,reject)=>{
     if(!file.type.startsWith("image/")){reject(new Error("not-image"));return;}
-    if(file.size>CELAM_MAX_INPUT_PHOTO_BYTES){reject(new Error("input-photo-too-large"));return;}
     const img=new Image(), reader=new FileReader();
     reader.onload=()=>{
       img.onload=()=>{
@@ -665,13 +663,6 @@ async function openShareParticipationDialog(challengeId){
   $("#shareChallengeLabel").textContent=`${challengeMonthLabel(c.month)} · ${c.title||"Locura CELAM"}`;
   $("#shareParticipationStoryTitle").value=existing?.title||"";
   $("#shareParticipationText").value=existing?.text||"";
-  if(Array.isArray(existing?.photoData) && existing.photoData.length){
-    CELAM_PHOTO_DATA_URLS=existing.photoData.slice(0,CELAM_MAX_PHOTOS);
-    const preview=$("#sharePhotosPreview");
-    if(preview)preview.innerHTML=CELAM_PHOTO_DATA_URLS.map((src,i)=>`<img src="${esc(src)}" alt="Foto ${i+1}">`).join("");
-    const status=$("#sharePhotosStatus");
-    if(status)status.textContent=`${CELAM_PHOTO_DATA_URLS.length} foto${CELAM_PHOTO_DATA_URLS.length===1?"":"s"} ya compartida${CELAM_PHOTO_DATA_URLS.length===1?"":"s"}.`;
-  }
   $("#shareParticipationDialog").showModal();
 }
 
@@ -807,11 +798,9 @@ async function renderChallenges(){
   const months=[...new Set(publicChallenges.map(x=>x.month).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
   const now=new Date();
   const currentKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const selected=CURRENT_LOCURA_MONTH==="__all__"
-    ? "__all__"
-    : (months.includes(CURRENT_LOCURA_MONTH)
-      ? CURRENT_LOCURA_MONTH
-      : (months.includes(currentKey) ? currentKey : months[0]));
+  const selected=months.includes(CURRENT_LOCURA_MONTH)
+    ? CURRENT_LOCURA_MONTH
+    : (months.includes(currentKey) ? currentKey : months[0]);
   CURRENT_LOCURA_MONTH=selected;
 
   const visibleChallenges=selected==="__all__"
@@ -1008,11 +997,9 @@ async function renderSharedContent(){
   const months=[...new Set(published.map(c=>c.month).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
   const now=new Date();
   const currentKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const selected=CURRENT_SHARED_MONTH==="__all__"
-    ? "__all__"
-    : (months.includes(CURRENT_SHARED_MONTH)
-      ? CURRENT_SHARED_MONTH
-      : (months.includes(currentKey) ? currentKey : months[0]));
+  const selected=months.includes(CURRENT_SHARED_MONTH)
+    ? CURRENT_SHARED_MONTH
+    : (months.includes(currentKey) ? currentKey : months[0]);
   CURRENT_SHARED_MONTH=selected;
 
   box.innerHTML=`
