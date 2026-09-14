@@ -760,6 +760,104 @@ async function openScoreDialog(challengeId){
     $("#scoreList").innerHTML="<div class='empty'>No se han podido cargar las participaciones. Revisa las reglas de Firestore.</div>";
   }
 }
+
+async function getSharedParticipants(challengeId){
+  const db=challengesDb();
+  if(!db)return [];
+  try{
+    const snap=await db.collection("challenges").doc(challengeId).collection("participants").orderBy("submittedAt","asc").get();
+    const rows=[];
+    for(const d of snap.docs){
+      const p={id:d.id,...d.data()};
+      let voteCount=0, votedByMe=false;
+      try{
+        const votesSnap=await d.ref.collection("votes").get();
+        voteCount=votesSnap.size;
+        votedByMe=!!currentUid() && votesSnap.docs.some(v=>v.id===currentUid());
+      }catch(e){
+        console.warn("CELAM: no se pudieron cargar los votos",e);
+      }
+      rows.push({...p,voteCount,votedByMe});
+    }
+    return rows;
+  }catch(e){
+    console.error("CELAM: no se pudieron cargar las participaciones compartidas",e);
+    return [];
+  }
+}
+
+async function renderSharedContent(){
+  const box=$("#sharedContent");
+  if(!box)return;
+  const published=CELAM_CHALLENGES.filter(c=>c.published).sort((a,b)=>String(b.month||"").localeCompare(String(a.month||"")));
+  if(!published.length){
+    box.innerHTML="<div class='empty'>Todavía no hay locuras publicadas.</div>";
+    return;
+  }
+
+  box.innerHTML="<div class='empty'>Cargando locuras compartidas…</div>";
+  const me=currentUid();
+  const chunks=[];
+
+  for(const c of published){
+    const participants=await getSharedParticipants(c.id);
+    chunks.push(`
+      <section class="shared-challenge">
+        <div class="shared-challenge-heading">
+          <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><h3>${esc(c.title||"Locura CELAM")}</h3></div>
+        </div>
+        ${participants.length ? participants.map(p=>`
+          <article class="shared-entry">
+            <div class="shared-entry-body">
+              <strong>${esc(p.name||"Participante")}</strong>
+              ${p.submissionUrl
+                ? `<a class="shared-submission-link" href="${esc(p.submissionUrl)}" target="_blank" rel="noopener noreferrer">📎 Ver su participación</a>`
+                : `<small>Participación registrada</small>`}
+            </div>
+            <div class="shared-entry-action">
+              <span class="shared-vote-count">💚 ${p.voteCount||0}</span>
+              ${p.uid===me
+                ? `<span class="shared-own-note">Tu locura</span>`
+                : `<button type="button" class="shared-vote-btn ${p.votedByMe?"voted":""}" data-vote-challenge="${esc(c.id)}" data-vote-participant="${esc(p.uid)}" ${p.votedByMe?"aria-pressed=\"true\"":""}>${p.votedByMe?"💚 Votada":"💚 Votar"}</button>`}
+            </div>
+          </article>
+        `).join("") : `<div class="empty">Todavía no hay participaciones en esta locura.</div>`}
+      </section>
+    `);
+  }
+
+  box.innerHTML=chunks.join("");
+  box.querySelectorAll("[data-vote-challenge]").forEach(btn=>{
+    btn.onclick=()=>toggleSharedVote(btn.dataset.voteChallenge,btn.dataset.voteParticipant);
+  });
+}
+
+async function toggleSharedVote(challengeId, participantUid){
+  const db=challengesDb(), voterUid=currentUid();
+  if(!db||!voterUid)return;
+  if(voterUid===participantUid){
+    alert("No puedes votar tu propia locura.");
+    return;
+  }
+
+  const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(participantUid).collection("votes").doc(voterUid);
+  try{
+    const snap=await ref.get();
+    if(snap.exists){
+      await ref.delete();
+    }else{
+      await ref.set({
+        uid:voterUid,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    await renderSharedContent();
+  }catch(e){
+    console.error("CELAM: error al guardar el voto",e);
+    alert("No se ha podido guardar tu voto. Revisa la conexión y los permisos de Firestore.");
+  }
+}
+
 async function renderRanking(mode="monthly", selectedMonth=""){
   CURRENT_RANKING_MODE=mode;
   const box=$("#rankingContent");if(!box)return;
@@ -927,6 +1025,11 @@ $("#challengeRankingBtn")?.addEventListener("click",async()=>{
   $("#rankingPanel").scrollIntoView({behavior:"smooth",block:"start"});
 });
 $("#closeRankingBtn")?.addEventListener("click",()=>$("#rankingPanel").hidden=true);
+$("#challengeSharedBtn")?.addEventListener("click",async()=>{
+  $("#sharedPanel").hidden=false; await renderSharedContent();
+  $("#sharedPanel").scrollIntoView({behavior:"smooth",block:"start"});
+});
+$("#closeSharedBtn")?.addEventListener("click",()=>$("#sharedPanel").hidden=true);
 document.querySelectorAll("[data-ranking]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-ranking]").forEach(x=>x.classList.toggle("active",x===b));renderRanking(b.dataset.ranking)});
 $("#addChallengeBtn")?.addEventListener("click",()=>openChallengeDialog());
 $("#adminAddChallengeBtn")?.addEventListener("click",()=>openChallengeDialog());

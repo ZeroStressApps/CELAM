@@ -444,6 +444,23 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
   }
 }
 
+
+.shared-challenge{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:16px;margin:0 0 16px}
+.shared-challenge-heading h3{font-family:"Playfair Display",serif;font-size:22px;margin:4px 0 12px}
+.shared-entry{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.shared-entry-body{display:flex;flex-direction:column;gap:5px;min-width:0}
+.shared-entry-body strong{font-size:17px}
+.shared-submission-link{color:var(--ink);font-weight:700;text-decoration:none}
+.shared-entry-action{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.shared-vote-count{font-weight:700;white-space:nowrap}
+.shared-vote-btn{border:0;border-radius:13px;padding:10px 13px;background:var(--lavender);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+.shared-vote-btn.voted{background:var(--sage);color:#314A3B}
+.shared-own-note{font-size:13px;color:var(--muted);font-weight:700;white-space:nowrap}
+@media(max-width:720px){
+  .shared-entry{align-items:flex-start;flex-direction:column}
+  .shared-entry-action{width:100%;justify-content:flex-end}
+  .shared-vote-btn{min-height:44px}
+}
 /* NUESTRAS LOCURAS */
 .challenge-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 20px}
 .challenge-list{display:grid;gap:18px}

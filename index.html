@@ -185,9 +185,19 @@
 
       <div class="challenge-toolbar">
         <button class="primary-button" id="challengeRankingBtn">🏆 Ver ranking</button>
+        <button class="secondary-button" id="challengeSharedBtn">💚 Locuras compartidas</button>
       </div>
 
       <div id="challengeList" class="challenge-list"></div>
+
+      <section class="ranking-panel" id="sharedPanel" hidden>
+        <div class="section-heading compact">
+          <div><span class="eyebrow">COMPARTIDAS</span><h2>Locuras compartidas</h2></div>
+          <button class="close-button" id="closeSharedBtn" aria-label="Cerrar">×</button>
+        </div>
+        <p class="challenge-note">Aquí puedes ver lo que han compartido los demás y votar tus favoritas. No puedes votar tu propia locura.</p>
+        <div id="sharedContent"></div>
+      </section>
 
       <section class="ranking-panel" id="rankingPanel" hidden>
         <div class="section-heading compact">

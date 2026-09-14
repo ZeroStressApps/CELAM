@@ -15,19 +15,39 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
 
-      // New users may only create their own profile with the initial role.
       allow create: if signedIn()
                     && request.auth.uid == userId
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.role == "usuario";
 
-      // Only an administrator can change/delete profiles.
       allow update, delete: if isAdmin();
+
+      match /reminders/{reminderId} {
+        allow read, create, update, delete:
+          if signedIn() && request.auth.uid == userId;
+      }
     }
 
-    match /users/{userId}/reminders/{reminderId} {
-      allow read, create, update, delete: if signedIn()
-                                           && request.auth.uid == userId;
+    match /challenges/{challengeId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+
+      match /participants/{userId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && request.auth.uid == userId;
+        allow update, delete: if signedIn() && request.auth.uid == userId;
+
+        match /votes/{voterId} {
+          allow read: if signedIn();
+          allow create: if signedIn()
+                        && request.auth.uid == voterId
+                        && voterId != userId;
+          allow delete: if signedIn()
+                        && request.auth.uid == voterId
+                        && voterId != userId;
+          allow update: if false;
+        }
+      }
     }
   }
 }
