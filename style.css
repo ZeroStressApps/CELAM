@@ -814,22 +814,6 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 .shared-entry-photos{
   margin-top:10px;
 }
-.shared-photo-open{
-  border:0;
-  padding:0;
-  background:transparent;
-  border-radius:12px;
-  cursor:pointer;
-  overflow:hidden;
-}
-.shared-photo-open img{
-  display:block;
-  transition:transform .15s ease;
-}
-.shared-photo-open:hover img,
-.shared-photo-open:focus-visible img{
-  transform:scale(1.03);
-}
 .shared-entry-audio-wrap{
   margin-top:8px;
   width:min(100%,420px);
