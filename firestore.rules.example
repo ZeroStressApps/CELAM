@@ -48,26 +48,30 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
 
       match /participants/{userId} {
-        allow read: if signedIn();
+        allow read: if isAdmin()
+                   || (signedIn()
+                       && challengeDoc(challengeId).data.published == true
+                       && resource.data.published == true);
 
-        // Un familiar puede registrar/editar su propia participación,
-        // pero nunca puede publicarla ni marcarla como aprobada.
+        // Publicación directa: cada familiar puede crear su propia participación
+        // ya publicada, siempre que la locura del mes esté publicada.
         allow create: if signedIn()
                       && request.auth.uid == userId
                       && request.resource.data.uid == request.auth.uid
-                      && request.resource.data.published == false
-                      && request.resource.data.status == "pending";
+                      && challengeDoc(challengeId).data.published == true
+                      && request.resource.data.published == true
+                      && request.resource.data.status == "published"
+                      && request.resource.data.name is string;
 
         allow update: if isAdmin()
                       || (
                         signedIn()
                         && request.auth.uid == userId
-                        && request.resource.data.published == resource.data.published
-                        && request.resource.data.status == resource.data.status
-                        && request.resource.data.score == resource.data.score
                         && request.resource.data.uid == resource.data.uid
                         && request.resource.data.name == resource.data.name
-                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["submissionUrl", "title", "text", "updatedAt"])
+                        && request.resource.data.published == true
+                        && request.resource.data.status == "published"
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["title", "text", "audioData", "updatedAt", "submittedAt", "published", "status"])
                       )
                       || (
                         isProtagonist(challengeId)
@@ -79,17 +83,17 @@ service cloud.firestore {
 
         allow delete: if isAdmin() || (signedIn() && request.auth.uid == userId);
 
-        match /votes/{voterId} {
+        match /likes/{likerId} {
           allow read: if signedIn();
 
           allow create: if signedIn()
-                        && request.auth.uid == voterId
-                        && voterId != userId
+                        && request.auth.uid == likerId
+                        && likerId != userId
                         && challengeDoc(challengeId).data.published == true
                         && get(/databases/$(database)/documents/challenges/$(challengeId)/participants/$(userId)).data.published == true
                         && request.resource.data.uid == request.auth.uid;
 
-          allow delete: if signedIn() && request.auth.uid == voterId;
+          allow delete: if signedIn() && request.auth.uid == likerId;
           allow update: if false;
         }
       }

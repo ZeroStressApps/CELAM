@@ -230,7 +230,7 @@
         <div class="section-heading compact">
           <div><span class="eyebrow">PARTICIPACIONES</span><h2>Participaciones recibidas</h2></div>
         </div>
-        <p class="challenge-note">Aquí aparecen las participaciones registradas. Revisa el texto y el enlace al archivo antes de publicarlas en Locuras compartidas.</p>
+        <p class="challenge-note">Aquí puedes ver todas las participaciones. Las nuevas se publican directamente; desde aquí puedes editarlas, ocultarlas o eliminarlas si hace falta.</p>
         <div id="adminParticipationList" class="admin-challenge-list"></div>
       </section>
     </section>
@@ -383,7 +383,7 @@
 
   <dialog id="adminParticipationDialog" class="challenge-dialog">
     <div class="dialog-header">
-      <div><span class="eyebrow">PARTICIPACIÓN</span><h2 id="adminParticipationDialogTitle">Revisar participación</h2></div>
+      <div><span class="eyebrow">PARTICIPACIÓN</span><h2 id="adminParticipationDialogTitle">Gestionar participación</h2></div>
       <button class="close-button" id="closeAdminParticipation" aria-label="Cerrar">×</button>
     </div>
     <form id="adminParticipationForm">
@@ -397,20 +397,51 @@
       <label>Historia
         <textarea id="adminParticipationText" rows="7" placeholder="Escribe o pega aquí la anécdota que quieres mostrar a la familia."></textarea>
       </label>
-      <label>Enlace al archivo
-        <input id="adminParticipationUrl" type="url" placeholder="https://drive.google.com/...">
-        <small class="field-help">Puede ser un archivo de Google Drive, una foto, un vídeo u otro enlace que quieras compartir.</small>
+      <label>Enlace al archivo (opcional)
+        <input id="adminParticipationUrl" type="url" placeholder="https://...">
       </label>
       <label>Estado
         <select id="adminParticipationStatus">
-          <option value="pending">🟠 Pendiente de revisión</option>
           <option value="published">🟢 Publicada</option>
-          <option value="rejected">⚪ No publicar</option>
+          <option value="rejected">⚪ Oculta</option>
         </select>
       </label>
       <div class="dialog-actions">
         <button type="button" class="secondary-button" id="cancelAdminParticipation">Cancelar</button>
         <button type="submit" class="primary-button">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="shareParticipationDialog" class="challenge-dialog">
+    <div class="dialog-header">
+      <div><span class="eyebrow">NUESTRAS LOCURAS</span><h2 id="shareParticipationTitle">Compartir mi locura</h2></div>
+      <button class="close-button" id="closeShareParticipation" aria-label="Cerrar">×</button>
+    </div>
+    <form id="shareParticipationForm">
+      <input type="hidden" id="shareChallengeId">
+      <p class="challenge-note" id="shareChallengeLabel"></p>
+      <label>Título (opcional)
+        <input id="shareParticipationStoryTitle" type="text" maxlength="120" placeholder="Ej. La escapada que salió regular">
+      </label>
+      <label>Cuéntanos tu historia
+        <textarea id="shareParticipationText" rows="7" maxlength="5000" placeholder="Escribe aquí tu anécdota. No hace falta escribir mucho."></textarea>
+      </label>
+      <div class="audio-recorder">
+        <div class="audio-recorder-title">🎙️ Si prefieres, puedes contarla con tu voz</div>
+        <small class="field-help">Pulsa grabar, habla y vuelve a pulsar para terminar. Máximo 90 segundos.</small>
+        <div class="audio-recorder-actions">
+          <button type="button" class="secondary-button" id="startAudioRecord">🎙️ Grabar audio</button>
+          <button type="button" class="secondary-button" id="stopAudioRecord" hidden>⏹️ Terminar</button>
+          <button type="button" class="secondary-button" id="clearAudioRecord" hidden>🗑️ Borrar audio</button>
+        </div>
+        <span id="audioRecordStatus" class="field-help"></span>
+        <audio id="shareAudioPreview" controls hidden></audio>
+      </div>
+      <p class="challenge-note share-public-note">💚 Al pulsar publicar, tu historia quedará visible para toda la familia.</p>
+      <div class="dialog-actions">
+        <button type="button" class="secondary-button" id="cancelShareParticipation">Cancelar</button>
+        <button type="submit" class="primary-button">💚 Publicar mi locura</button>
       </div>
     </form>
   </dialog>

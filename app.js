@@ -569,22 +569,97 @@ async function getMyParticipation(challengeId){
   }catch(e){return null}
 }
 
-async function markParticipation(challengeId, submissionUrl){
-  const db=challengesDb(),uid=currentUid();
-  if(!db||!uid)return;
-  try{
-    await db.collection("challenges").doc(challengeId).collection("participants").doc(uid).set({
-      uid,name:currentName(),submittedAt:firebase.firestore.FieldValue.serverTimestamp(),
-      submissionUrl:submissionUrl||"",
-      status:"pending",
-      published:false
-    },{merge:true});
-    alert("¡Participación registrada en CELAM!");
-    renderChallenges();
-  }catch(e){
-    console.error(e);
-    alert("No se ha podido registrar la participación. Revisa la conexión.");
+let CELAM_AUDIO_RECORDER=null;
+let CELAM_AUDIO_CHUNKS=[];
+let CELAM_AUDIO_BLOB=null;
+let CELAM_AUDIO_TIMER=null;
+
+function resetShareAudio(){
+  if(CELAM_AUDIO_RECORDER && CELAM_AUDIO_RECORDER.state!="inactive") CELAM_AUDIO_RECORDER.stop();
+  CELAM_AUDIO_RECORDER=null; CELAM_AUDIO_CHUNKS=[]; CELAM_AUDIO_BLOB=null;
+  clearInterval(CELAM_AUDIO_TIMER); CELAM_AUDIO_TIMER=null;
+  const preview=$("#shareAudioPreview"),status=$("#audioRecordStatus"),start=$("#startAudioRecord"),stop=$("#stopAudioRecord"),clear=$("#clearAudioRecord");
+  if(preview){preview.pause();preview.removeAttribute("src");preview.hidden=true;}
+  if(status)status.textContent="";
+  if(start){start.hidden=false;start.disabled=false;}
+  if(stop)stop.hidden=true;
+  if(clear)clear.hidden=true;
+}
+
+async function openShareParticipationDialog(challengeId){
+  const c=CELAM_CHALLENGES.find(x=>x.id===challengeId); if(!c)return;
+  const existing=await getMyParticipation(challengeId);
+  resetShareAudio();
+  $("#shareChallengeId").value=challengeId;
+  $("#shareChallengeLabel").textContent=`${challengeMonthLabel(c.month)} · ${c.title||"Locura CELAM"}`;
+  $("#shareParticipationStoryTitle").value=existing?.title||"";
+  $("#shareParticipationText").value=existing?.text||"";
+  $("#shareParticipationDialog").showModal();
+}
+
+async function startAudioRecording(){
+  if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){
+    alert("Tu dispositivo no permite grabar audio desde CELAM. Puedes escribir tu historia."); return;
   }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const options=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?{mimeType:"audio/webm;codecs=opus",audioBitsPerSecond:24000}:{};
+    CELAM_AUDIO_RECORDER=new MediaRecorder(stream,options); CELAM_AUDIO_CHUNKS=[];
+    CELAM_AUDIO_RECORDER.ondataavailable=e=>{if(e.data.size)CELAM_AUDIO_CHUNKS.push(e.data)};
+    CELAM_AUDIO_RECORDER.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      CELAM_AUDIO_BLOB=new Blob(CELAM_AUDIO_CHUNKS,{type:CELAM_AUDIO_RECORDER.mimeType||"audio/webm"});
+      const preview=$("#shareAudioPreview");
+      if(preview){preview.src=URL.createObjectURL(CELAM_AUDIO_BLOB);preview.hidden=false;}
+      $("#startAudioRecord").hidden=true; $("#stopAudioRecord").hidden=true; $("#clearAudioRecord").hidden=false;
+      $("#audioRecordStatus").textContent=`Audio grabado (${Math.round(CELAM_AUDIO_BLOB.size/1024)} KB).`;
+      clearInterval(CELAM_AUDIO_TIMER); CELAM_AUDIO_TIMER=null;
+    };
+    CELAM_AUDIO_RECORDER.start();
+    $("#startAudioRecord").hidden=true; $("#stopAudioRecord").hidden=false; $("#clearAudioRecord").hidden=true;
+    let seconds=0; $("#audioRecordStatus").textContent="Grabando… 0:00";
+    CELAM_AUDIO_TIMER=setInterval(()=>{seconds++; $("#audioRecordStatus").textContent=`Grabando… 0:${String(seconds).padStart(2,"0")}`; if(seconds>=90)stopAudioRecording();},1000);
+  }catch(e){
+    console.error(e); alert("No se ha podido activar el micrófono. Si quieres, puedes escribir tu historia.");
+  }
+}
+function stopAudioRecording(){
+  if(CELAM_AUDIO_RECORDER && CELAM_AUDIO_RECORDER.state!=="inactive")CELAM_AUDIO_RECORDER.stop();
+}
+
+async function blobToDataUrl(blob){
+  return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob);});
+}
+
+async function saveMyParticipation(e){
+  e.preventDefault();
+  const db=challengesDb(),uid=currentUid(),challengeId=$("#shareChallengeId").value;
+  if(!db||!uid||!challengeId)return;
+  const challenge=CELAM_CHALLENGES.find(x=>x.id===challengeId);
+  if(!challenge)return;
+  const text=$("#shareParticipationText").value.trim();
+  const title=$("#shareParticipationStoryTitle").value.trim();
+  if(!text && !CELAM_AUDIO_BLOB){alert("Cuéntanos tu historia por escrito o con un audio antes de publicarla.");return;}
+  if(CELAM_AUDIO_BLOB && CELAM_AUDIO_BLOB.size>700000){alert("El audio es demasiado largo. Grábalo de nuevo intentando que dure menos de 90 segundos.");return;}
+  const btn=$("#shareParticipationForm button[type=submit]"); if(btn)btn.disabled=true;
+  try{
+    const payload={uid,name:currentName(),title,text,published:true,status:"published",updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    if(!$("#shareParticipationText").value.trim() && !CELAM_AUDIO_BLOB)payload.text="";
+    if(CELAM_AUDIO_BLOB)payload.audioData=await blobToDataUrl(CELAM_AUDIO_BLOB);
+    else payload.audioData="";
+    const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(uid);
+    const existing=await ref.get();
+    if(!existing.exists)payload.submittedAt=firebase.firestore.FieldValue.serverTimestamp();
+    await ref.set(payload,{merge:true});
+    $("#shareParticipationDialog").close(); resetShareAudio();
+    alert("💚 ¡Tu locura ya está compartida con la familia!");
+    await renderChallenges();
+    await renderSharedContent();
+    if(isChallengeAdmin())await renderAdminParticipations();
+  }catch(e){
+    console.error("CELAM: no se pudo publicar la participación",e);
+    alert("No se ha podido publicar tu locura. Comprueba la conexión e inténtalo de nuevo.");
+  }finally{if(btn)btn.disabled=false;}
 }
 
 
@@ -615,7 +690,7 @@ async function renderChallengeCard(c){
     <div class="challenge-actions">
       ${c.videoUrl?`<a class="challenge-video" href="${video}" target="_blank" rel="noopener">▶️ Ver vídeo</a>`:""}
       ${c.submissionUrl?`<a class="challenge-submit" href="${upload}" target="_blank" rel="noopener">📤 Subir mi participación</a>`:""}
-      <button class="challenge-submit" data-mark-participation="${esc(c.id)}">${me?"✓ He participado":"📌 Registrar mi participación"}</button>
+      <button class="challenge-submit" data-share-challenge="${esc(c.id)}">${me?"✎ Editar mi locura":"✍️ Compartir mi locura"}</button>
       ${canScore?`<button class="challenge-score" data-score-challenge="${esc(c.id)}">🏅 Puntuar participantes</button>`:""}
       ${isChallengeAdmin()?`<button class="challenge-edit" data-edit-challenge="${esc(c.id)}">✎ Editar</button>`:""}
     </div>
@@ -640,13 +715,7 @@ async function renderChallenges(){
   }
   const cards=await Promise.all(publicChallenges.map(renderChallengeCard));
   c.innerHTML=cards.join("");
-  c.querySelectorAll("[data-mark-participation]").forEach(btn=>btn.onclick=async()=>{
-    const id=btn.dataset.markParticipation;
-    const challenge=CELAM_CHALLENGES.find(x=>x.id===id);
-    if(!challenge)return;
-    const url=challenge.submissionUrl||"";
-    await markParticipation(id,url);
-  });
+  c.querySelectorAll("[data-share-challenge]").forEach(btn=>btn.onclick=()=>openShareParticipationDialog(btn.dataset.shareChallenge));
   c.querySelectorAll("[data-score-challenge]").forEach(btn=>btn.onclick=()=>openScoreDialog(btn.dataset.scoreChallenge));
   c.querySelectorAll("[data-edit-challenge]").forEach(btn=>btn.onclick=()=>openChallengeDialog(CELAM_CHALLENGES.find(x=>x.id===btn.dataset.editChallenge)));
 }
@@ -781,15 +850,15 @@ async function getSharedParticipants(challengeId){
     const rows=[];
     for(const d of snap.docs){
       const p={id:d.id,...d.data()};
-      let voteCount=0, votedByMe=false;
+      let likeCount=0, likedByMe=false;
       try{
-        const votesSnap=await d.ref.collection("votes").get();
-        voteCount=votesSnap.size;
-        votedByMe=!!currentUid() && votesSnap.docs.some(v=>v.id===currentUid());
+        const likesSnap=await d.ref.collection("likes").get();
+        likeCount=likesSnap.size;
+        likedByMe=!!currentUid() && likesSnap.docs.some(v=>v.id===currentUid());
       }catch(e){
-        console.warn("CELAM: no se pudieron cargar los votos",e);
+        console.warn("CELAM: no se pudieron cargar los Me gusta",e);
       }
-      rows.push({...p,voteCount,votedByMe});
+      rows.push({...p,likeCount,likedByMe});
     }
     return rows;
   }catch(e){
@@ -822,15 +891,16 @@ async function renderSharedContent(){
           <article class="shared-entry">
             <div class="shared-entry-body">
               <strong>${esc(p.name||"Participante")}</strong>
-              ${p.submissionUrl
-                ? `<a class="shared-submission-link" href="${esc(p.submissionUrl)}" target="_blank" rel="noopener noreferrer">📎 Ver su participación</a>`
-                : `<small>Participación registrada</small>`}
+              ${p.title?`<div class="shared-entry-title">${esc(p.title)}</div>`:""}
+              ${p.text?`<div class="shared-entry-text">${esc(p.text).replace(/\n/g,"<br>")}</div>`:""}
+              ${p.audioData?`<audio class="shared-entry-audio" controls src="${esc(p.audioData)}"></audio>`:""}
+              ${p.submissionUrl?`<a class="shared-submission-link" href="${esc(p.submissionUrl)}" target="_blank" rel="noopener noreferrer">📎 Ver su participación</a>`:""}
             </div>
             <div class="shared-entry-action">
-              <span class="shared-vote-count">💚 ${p.voteCount||0}</span>
+              <span class="shared-like-count">💚 ${p.likeCount||0}</span>
               ${p.uid===me
                 ? `<span class="shared-own-note">Tu locura</span>`
-                : `<button type="button" class="shared-vote-btn ${p.votedByMe?"voted":""}" data-vote-challenge="${esc(c.id)}" data-vote-participant="${esc(p.uid)}" ${p.votedByMe?"aria-pressed=\"true\"":""}>${p.votedByMe?"💚 Votada":"💚 Votar"}</button>`}
+                : `<button type="button" class="shared-like-btn ${p.likedByMe?"liked":""}" data-like-challenge="${esc(c.id)}" data-like-participant="${esc(p.uid)}" ${p.likedByMe?"aria-pressed=\"true\"":""}>${p.likedByMe?"💚 Votada":"💚 Me gusta"}</button>`}
             </div>
           </article>
         `).join("") : `<div class="empty">Todavía no hay participaciones en esta locura.</div>`}
@@ -839,27 +909,27 @@ async function renderSharedContent(){
   }
 
   box.innerHTML=chunks.join("");
-  box.querySelectorAll("[data-vote-challenge]").forEach(btn=>{
-    btn.onclick=()=>toggleSharedVote(btn.dataset.voteChallenge,btn.dataset.voteParticipant);
+  box.querySelectorAll("[data-like-challenge]").forEach(btn=>{
+    btn.onclick=()=>toggleSharedLike(btn.dataset.likeChallenge,btn.dataset.likeParticipant);
   });
 }
 
-async function toggleSharedVote(challengeId, participantUid){
-  const db=challengesDb(), voterUid=currentUid();
-  if(!db||!voterUid)return;
-  if(voterUid===participantUid){
+async function toggleSharedLike(challengeId, participantUid){
+  const db=challengesDb(), likerUid=currentUid();
+  if(!db||!likerUid)return;
+  if(likerUid===participantUid){
     alert("No puedes votar tu propia locura.");
     return;
   }
 
-  const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(participantUid).collection("votes").doc(voterUid);
+  const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(participantUid).collection("likes").doc(likerUid);
   try{
     const snap=await ref.get();
     if(snap.exists){
       await ref.delete();
     }else{
       await ref.set({
-        uid:voterUid,
+        uid:likerUid,
         createdAt:firebase.firestore.FieldValue.serverTimestamp()
       });
     }
@@ -1032,7 +1102,8 @@ async function openParticipationAdminDialog(challengeId,participantId){
     $("#adminParticipationTitle").value=p.title||"";
     $("#adminParticipationText").value=p.text||"";
     $("#adminParticipationUrl").value=p.submissionUrl||"";
-    $("#adminParticipationDialogTitle").textContent=`Publicar · ${p.name||"Participante"}`;
+    $("#adminParticipationStatus").value=p.status|| (p.published?"published":"pending");
+    $("#adminParticipationDialogTitle").textContent=`Gestionar · ${p.name||"Participante"}`;
     $("#adminParticipationDialog").showModal();
   }catch(e){console.error(e);alert("No se ha podido cargar la participación.");}
 }
@@ -1122,6 +1193,12 @@ $("#closeScore")?.addEventListener("click",()=>$("#scoreDialog").close());
 $("#closeAdminParticipation")?.addEventListener("click",()=>$("#adminParticipationDialog").close());
 $("#cancelAdminParticipation")?.addEventListener("click",()=>$("#adminParticipationDialog").close());
 $("#adminParticipationForm")?.addEventListener("submit",saveAdminParticipation);
+$("#startAudioRecord")?.addEventListener("click",startAudioRecording);
+$("#stopAudioRecord")?.addEventListener("click",stopAudioRecording);
+$("#clearAudioRecord")?.addEventListener("click",resetShareAudio);
+$("#cancelShareParticipation")?.addEventListener("click",()=>{resetShareAudio();$("#shareParticipationDialog")?.close();});
+$("#closeShareParticipation")?.addEventListener("click",()=>{resetShareAudio();$("#shareParticipationDialog")?.close();});
+$("#shareParticipationForm")?.addEventListener("submit",saveMyParticipation);
 
 const _switchView=switchView;
 switchView=function(view){
