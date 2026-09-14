@@ -226,6 +226,13 @@
         </div>
         <div id="adminChallengeList" class="admin-challenge-list"></div>
       </section>
+      <section class="admin-section" id="adminParticipationSection">
+        <div class="section-heading compact">
+          <div><span class="eyebrow">PARTICIPACIONES</span><h2>Participaciones recibidas</h2></div>
+        </div>
+        <p class="challenge-note">Aquí aparecen las participaciones registradas. Revisa el texto y el enlace al archivo antes de publicarlas en Locuras compartidas.</p>
+        <div id="adminParticipationList" class="admin-challenge-list"></div>
+      </section>
     </section>
 
     <section id="treeView" class="view">
@@ -369,6 +376,39 @@
       <div class="dialog-actions">
         <button type="button" class="secondary-button" id="cancelChallenge">Cancelar</button>
         <button type="submit" class="primary-button">Guardar locura</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="adminParticipationDialog" class="challenge-dialog">
+    <div class="dialog-header">
+      <div><span class="eyebrow">PARTICIPACIÓN</span><h2 id="adminParticipationDialogTitle">Revisar participación</h2></div>
+      <button class="close-button" id="closeAdminParticipation" aria-label="Cerrar">×</button>
+    </div>
+    <form id="adminParticipationForm">
+      <input type="hidden" id="adminParticipationChallengeId">
+      <input type="hidden" id="adminParticipationUid">
+      <p class="challenge-note"><strong id="adminParticipationName">Participante</strong></p>
+      <label>Título de la historia
+        <input id="adminParticipationTitle" type="text" placeholder="Ej. La escapada que salió regular">
+      </label>
+      <label>Historia
+        <textarea id="adminParticipationText" rows="7" placeholder="Escribe o pega aquí la anécdota que quieres mostrar a la familia."></textarea>
+      </label>
+      <label>Enlace al archivo
+        <input id="adminParticipationUrl" type="url" placeholder="https://drive.google.com/...">
+        <small class="field-help">Puede ser un archivo de Google Drive, una foto, un vídeo u otro enlace que quieras compartir.</small>
+      </label>
+      <label>Estado
+        <select id="adminParticipationStatus">
+          <option value="pending">🟠 Pendiente de revisión</option>
+          <option value="published">🟢 Publicada</option>
+          <option value="rejected">⚪ No publicar</option>
+        </select>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="secondary-button" id="cancelAdminParticipation">Cancelar</button>
+        <button type="submit" class="primary-button">Guardar</button>
       </div>
     </form>
   </dialog>

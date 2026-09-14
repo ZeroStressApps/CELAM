@@ -604,3 +604,21 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
   .ranking-month-select-wrap{align-items:stretch;flex-direction:column;gap:6px}
   .ranking-month-select-wrap select{width:100%}
 }
+
+/* ===== RANKING POR AÑO ===== */
+.ranking-year-selector{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 16px}
+.ranking-year-selector label{font-size:14px;font-weight:700;color:var(--muted)}
+.ranking-year-selector select{border:1px solid var(--line);background:var(--white);border-radius:12px;padding:9px 12px;font:inherit;color:var(--ink);min-width:110px}
+
+/* ===== ADMINISTRACIÓN: PARTICIPACIONES ===== */
+#adminParticipationSection .challenge-note{margin:0 0 14px}
+#adminParticipationDialog form{padding:0 34px 30px}
+#adminParticipationDialog .challenge-note{padding:0 0 18px}
+#adminParticipationDialog label{display:grid;gap:7px;margin:0 0 15px}
+#adminParticipationDialog input,#adminParticipationDialog textarea,#adminParticipationDialog select{box-sizing:border-box;width:100%;font:inherit;border:1px solid var(--line);background:var(--white);color:var(--ink);border-radius:12px;padding:11px 12px}
+#adminParticipationDialog textarea{resize:vertical;line-height:1.5}
+@media(max-width:700px){
+  #adminParticipationDialog form{padding:0 20px 24px}
+  .ranking-year-selector{justify-content:stretch}
+  .ranking-year-selector select{flex:1}
+}

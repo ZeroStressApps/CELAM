@@ -521,6 +521,7 @@ $("#closeBirthdayPopup")?.addEventListener("click",()=>$("#birthdayPopup").close
 let CELAM_CHALLENGES=[];
 let CURRENT_RANKING_MODE="monthly";
 let CURRENT_RANKING_MONTH="";
+let CURRENT_RANKING_YEAR="";
 
 function challengesDb(){return window.CELAM_FIRESTORE_DB||null}
 function currentUid(){return window.CELAM_CURRENT_USER?.uid||""}
@@ -574,7 +575,9 @@ async function markParticipation(challengeId, submissionUrl){
   try{
     await db.collection("challenges").doc(challengeId).collection("participants").doc(uid).set({
       uid,name:currentName(),submittedAt:firebase.firestore.FieldValue.serverTimestamp(),
-      submissionUrl:submissionUrl||""
+      submissionUrl:submissionUrl||"",
+      status:"pending",
+      published:false
     },{merge:true});
     alert("¡Participación registrada en CELAM!");
     renderChallenges();
@@ -686,6 +689,7 @@ async function saveChallenge(e){
       return monthName ? `Locura del mes de ${monthName}` : "";
     })(),
     month:$("#challengeMonth").value,
+    year:Number(String($("#challengeMonth").value||"").slice(0,4))||new Date().getFullYear(),
     protagonistIds,
     protagonistNames:protagonists.map(p=>p.name),
     protagonistEmails:protagonists.map(p=>p.email||"").filter(Boolean),
@@ -707,6 +711,7 @@ async function saveChallenge(e){
     $("#challengeDialog").close();
     await loadChallenges();
     await renderAdminChallenges();
+    await renderAdminParticipations();
   }catch(error){
     console.error(error);
     alert("No se ha podido guardar la locura. Revisa las reglas de Firestore.");
@@ -800,7 +805,7 @@ async function renderSharedContent(){
   const chunks=[];
 
   for(const c of published){
-    const participants=await getSharedParticipants(c.id);
+    const participants=(await getSharedParticipants(c.id)).filter(p=>p.published===true);
     chunks.push(`
       <section class="shared-challenge">
         <div class="shared-challenge-heading">
@@ -867,87 +872,82 @@ async function renderRanking(mode="monthly", selectedMonth=""){
     const challengeDocs=await db.collection("challenges").get();
     const challenges=challengeDocs.docs
       .map(d=>({id:d.id,...d.data()}))
-      .filter(c=>c.published===true && c.month);
+      .filter(c=>c.published===true && c.month)
+      .map(c=>({...c,year:Number(c.year)||Number(String(c.month).slice(0,4))}));
+
+    const availableYears=[...new Set(challenges.map(c=>c.year).filter(Number.isFinite))].sort((a,b)=>b-a);
+    if(!availableYears.length){box.innerHTML="<div class='empty'>Todavía no hay locuras publicadas para consultar el ranking.</div>";return;}
+    if(!CURRENT_RANKING_YEAR || !availableYears.includes(Number(CURRENT_RANKING_YEAR))) CURRENT_RANKING_YEAR=availableYears[0];
+    const year=Number(CURRENT_RANKING_YEAR);
 
     if(mode==="annual"){
-      CURRENT_RANKING_MONTH="";
-    }else{
-      const monthlyChallenges=challenges
-        .filter(c=>String(c.month).slice(0,4)===String(data.year))
-        .sort((a,b)=>String(a.month).localeCompare(String(b.month)));
-      if(!monthlyChallenges.length){
-        CURRENT_RANKING_MONTH="";
-        box.innerHTML="<div class='empty'>Todavía no hay locuras publicadas para consultar el ranking mensual.</div>";
-        return;
-      }
-      const availableMonths=[...new Set(monthlyChallenges.map(c=>c.month))];
-      if(!selectedMonth || !availableMonths.includes(selectedMonth)){
-        const now=new Date();
-        const currentKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-        CURRENT_RANKING_MONTH=availableMonths.includes(currentKey)
-          ? currentKey
-          : availableMonths[availableMonths.length-1];
-      }else{
-        CURRENT_RANKING_MONTH=selectedMonth;
-      }
-
-      const currentIndex=availableMonths.indexOf(CURRENT_RANKING_MONTH);
-      const previousMonth=currentIndex>0?availableMonths[currentIndex-1]:"";
-      const nextMonth=currentIndex<availableMonths.length-1?availableMonths[currentIndex+1]:"";
-      const currentLabel=challengeMonthLabel(CURRENT_RANKING_MONTH);
-
+      const annualChallenges=challenges.filter(c=>c.year===year);
       box.innerHTML=`
-        <div class="ranking-month-selector">
-          <button type="button" class="ranking-month-arrow" id="rankingPrevMonth" ${previousMonth?"":"disabled"} aria-label="Mes anterior">‹</button>
-          <div class="ranking-month-current">
-            <span class="ranking-month-label">Ranking mensual</span>
-            <strong>${esc(currentLabel)}</strong>
-          </div>
-          <button type="button" class="ranking-month-arrow" id="rankingNextMonth" ${nextMonth?"":"disabled"} aria-label="Mes siguiente">›</button>
-        </div>
-        <div class="ranking-month-select-wrap">
-          <label for="rankingMonthSelect">Consultar otro mes</label>
-          <select id="rankingMonthSelect">
-            ${availableMonths.map(m=>`<option value="${esc(m)}" ${m===CURRENT_RANKING_MONTH?"selected":""}>${esc(challengeMonthLabel(m))}</option>`).join("")}
-          </select>
-        </div>
-      `;
-
-      $("#rankingPrevMonth")?.addEventListener("click",()=>renderRanking("monthly",previousMonth));
-      $("#rankingNextMonth")?.addEventListener("click",()=>renderRanking("monthly",nextMonth));
-      $("#rankingMonthSelect")?.addEventListener("change",e=>renderRanking("monthly",e.target.value));
+        <div class="ranking-year-selector">
+          <label for="rankingYearSelect">Año</label>
+          <select id="rankingYearSelect">${availableYears.map(y=>`<option value="${y}" ${y===year?"selected":""}>${y}</option>`).join("")}</select>
+        </div>`;
+      $("#rankingYearSelect")?.addEventListener("change",e=>{CURRENT_RANKING_YEAR=Number(e.target.value);renderRanking("annual");});
+      await appendRankingTable(annualChallenges,box,`este año (${year})`);
+      return;
     }
 
-    const totals={};
-    for(const c of challenges){
-      const year=String(c.month||"").slice(0,4);
-      if(mode==="annual" && year!==String(data.year))continue;
-      if(mode==="monthly" && c.month!==CURRENT_RANKING_MONTH)continue;
-      const snap=await db.collection("challenges").doc(c.id).collection("participants").get();
-      snap.forEach(d=>{
-        const p=d.data(),score=Number(p.score);
-        if(!Number.isFinite(score))return;
-        totals[p.uid]=totals[p.uid]||{name:p.name||"Participante",points:0};
-        totals[p.uid].points+=score;
-      });
+    const monthlyChallenges=challenges.filter(c=>c.year===year).sort((a,b)=>String(a.month).localeCompare(String(b.month)));
+    if(!monthlyChallenges.length){
+      box.innerHTML=`<div class='empty'>Todavía no hay locuras publicadas en ${year} para consultar el ranking mensual.</div>`;
+      return;
     }
+    const availableMonths=[...new Set(monthlyChallenges.map(c=>c.month))];
+    if(!selectedMonth || !availableMonths.includes(selectedMonth)){
+      const now=new Date();
+      const currentKey=`${year}-${String(now.getMonth()+1).padStart(2,"0")}`;
+      CURRENT_RANKING_MONTH=availableMonths.includes(currentKey)?currentKey:availableMonths[availableMonths.length-1];
+    }else CURRENT_RANKING_MONTH=selectedMonth;
 
-    const rows=Object.values(totals).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name));
-    const table=rows.length
-      ? `<table class="ranking-table"><thead><tr><th>#</th><th>Participante</th><th>Puntos</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="ranking-place">${i<3?["🥇","🥈","🥉"][i]:i+1}</td><td>${esc(r.name)}</td><td><strong>${r.points}</strong></td></tr>`).join("")}</tbody></table>`
-      : `<div class="empty">Todavía no hay puntuaciones para ${mode==="monthly"?`este mes`:`este año`}.</div>`;
+    const currentIndex=availableMonths.indexOf(CURRENT_RANKING_MONTH);
+    const previousMonth=currentIndex>0?availableMonths[currentIndex-1]:"";
+    const nextMonth=currentIndex<availableMonths.length-1?availableMonths[currentIndex+1]:"";
+    const currentLabel=challengeMonthLabel(CURRENT_RANKING_MONTH);
 
-    if(mode==="monthly"){
-      box.insertAdjacentHTML("beforeend",table);
-    }else{
-      box.innerHTML=table;
-    }
+    box.innerHTML=`
+      <div class="ranking-year-selector">
+        <label for="rankingYearSelect">Año</label>
+        <select id="rankingYearSelect">${availableYears.map(y=>`<option value="${y}" ${y===year?"selected":""}>${y}</option>`).join("")}</select>
+      </div>
+      <div class="ranking-month-selector">
+        <button type="button" class="ranking-month-arrow" id="rankingPrevMonth" ${previousMonth?"":"disabled"} aria-label="Mes anterior">‹</button>
+        <div class="ranking-month-current"><span class="ranking-month-label">Ranking mensual</span><strong>${esc(currentLabel)}</strong></div>
+        <button type="button" class="ranking-month-arrow" id="rankingNextMonth" ${nextMonth?"":"disabled"} aria-label="Mes siguiente">›</button>
+      </div>
+      <div class="ranking-month-select-wrap"><label for="rankingMonthSelect">Consultar otro mes</label><select id="rankingMonthSelect">${availableMonths.map(m=>`<option value="${esc(m)}" ${m===CURRENT_RANKING_MONTH?"selected":""}>${esc(challengeMonthLabel(m))}</option>`).join("")}</select></div>`;
+
+    $("#rankingYearSelect")?.addEventListener("change",e=>{CURRENT_RANKING_YEAR=Number(e.target.value);CURRENT_RANKING_MONTH="";renderRanking("monthly");});
+    $("#rankingPrevMonth")?.addEventListener("click",()=>renderRanking("monthly",previousMonth));
+    $("#rankingNextMonth")?.addEventListener("click",()=>renderRanking("monthly",nextMonth));
+    $("#rankingMonthSelect")?.addEventListener("change",e=>renderRanking("monthly",e.target.value));
+    await appendRankingTable(monthlyChallenges.filter(c=>c.month===CURRENT_RANKING_MONTH),box,"este mes");
   }catch(e){
-    console.error(e);
-    box.innerHTML="<div class='empty'>No se ha podido cargar el ranking.</div>";
+    console.error(e);box.innerHTML="<div class='empty'>No se ha podido cargar el ranking.</div>";
   }
 }
 
+async function appendRankingTable(challenges,box,emptyLabel){
+  const db=challengesDb(),totals={};
+  for(const c of challenges){
+    const snap=await db.collection("challenges").doc(c.id).collection("participants").get();
+    snap.forEach(d=>{
+      const p=d.data(),score=Number(p.score);
+      if(!Number.isFinite(score))return;
+      totals[p.uid]=totals[p.uid]||{name:p.name||"Participante",points:0};
+      totals[p.uid].points+=score;
+    });
+  }
+  const rows=Object.values(totals).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name));
+  const table=rows.length
+    ? `<table class="ranking-table"><thead><tr><th>#</th><th>Participante</th><th>Puntos</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="ranking-place">${i<3?["🥇","🥈","🥉"][i]:i+1}</td><td>${esc(r.name)}</td><td><strong>${r.points}</strong></td></tr>`).join("")}</tbody></table>`
+    : `<div class="empty">Todavía no hay puntuaciones para ${emptyLabel}.</div>`;
+  box.insertAdjacentHTML("beforeend",table);
+}
 
 async function toggleChallengePublished(challengeId){
   if(!isChallengeAdmin())return;
@@ -998,6 +998,69 @@ async function deleteChallenge(challengeId){
   }
 }
 
+async function getAllParticipantsForAdmin(){
+  const db=challengesDb(); if(!db||!isChallengeAdmin()) return [];
+  const rows=[];
+  for(const c of CELAM_CHALLENGES){
+    const snap=await db.collection("challenges").doc(c.id).collection("participants").orderBy("submittedAt","asc").get();
+    snap.forEach(d=>rows.push({challenge:c,participant:{id:d.id,...d.data()}}));
+  }
+  return rows;
+}
+
+async function openParticipationAdminDialog(challengeId,participantId){
+  if(!isChallengeAdmin())return;
+  const db=challengesDb(); if(!db)return;
+  const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(participantId);
+  try{
+    const snap=await ref.get(); if(!snap.exists)return;
+    const p=snap.data();
+    $("#adminParticipationChallengeId").value=challengeId;
+    $("#adminParticipationUid").value=participantId;
+    $("#adminParticipationName").textContent=p.name||"Participante";
+    $("#adminParticipationTitle").value=p.title||"";
+    $("#adminParticipationText").value=p.text||"";
+    $("#adminParticipationUrl").value=p.submissionUrl||"";
+    $("#adminParticipationDialogTitle").textContent=`Publicar · ${p.name||"Participante"}`;
+    $("#adminParticipationDialog").showModal();
+  }catch(e){console.error(e);alert("No se ha podido cargar la participación.");}
+}
+
+async function saveAdminParticipation(e){
+  e.preventDefault();
+  if(!isChallengeAdmin())return;
+  const db=challengesDb();if(!db)return;
+  const challengeId=$("#adminParticipationChallengeId").value;
+  const participantId=$("#adminParticipationUid").value;
+  const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(participantId);
+  const status=$("#adminParticipationStatus").value;
+  try{
+    await ref.set({
+      title:$("#adminParticipationTitle").value.trim(),
+      text:$("#adminParticipationText").value.trim(),
+      submissionUrl:$("#adminParticipationUrl").value.trim(),
+      status,
+      published:status==="published",
+      publishedAt:status==="published"?firebase.firestore.FieldValue.serverTimestamp():null,
+      publishedBy:status==="published"?currentUid():null
+    },{merge:true});
+    $("#adminParticipationDialog").close();
+    await renderAdminParticipations();
+  }catch(e){console.error(e);alert("No se ha podido guardar la publicación. Revisa las reglas de Firestore.");}
+}
+
+async function renderAdminParticipations(){
+  const box=$("#adminParticipationList"); if(!box)return;
+  if(!isChallengeAdmin()){box.innerHTML="";return;}
+  const rows=await getAllParticipantsForAdmin();
+  if(!rows.length){box.innerHTML="<div class='empty'>Todavía no hay participaciones recibidas.</div>";return;}
+  box.innerHTML=rows.map(({challenge:c,participant:p})=>`<article class="admin-challenge-row">
+    <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(p.name||"Participante")}</strong><small>${p.published?"🟢 Publicada":p.status==="rejected"?"⚪ No publicada":"🟠 Pendiente de revisión"}</small></div>
+    <div class="admin-challenge-actions"><button class="challenge-edit" data-admin-participation="${esc(c.id)}|${esc(p.id)}">${p.published?"✎ Editar publicación":"👁 Revisar / publicar"}</button></div>
+  </article>`).join("");
+  box.querySelectorAll("[data-admin-participation]").forEach(btn=>{const [cid,pid]=btn.dataset.adminParticipation.split("|");btn.onclick=()=>openParticipationAdminDialog(cid,pid);});
+}
+
 async function renderAdminChallenges(){
   const box=$("#adminChallengeList");
   if(!box)return;
@@ -1037,6 +1100,9 @@ $("#closeChallenge")?.addEventListener("click",()=>$("#challengeDialog").close()
 $("#cancelChallenge")?.addEventListener("click",()=>$("#challengeDialog").close());
 $("#challengeForm")?.addEventListener("submit",saveChallenge);
 $("#closeScore")?.addEventListener("click",()=>$("#scoreDialog").close());
+$("#closeAdminParticipation")?.addEventListener("click",()=>$("#adminParticipationDialog").close());
+$("#cancelAdminParticipation")?.addEventListener("click",()=>$("#adminParticipationDialog").close());
+$("#adminParticipationForm")?.addEventListener("submit",saveAdminParticipation);
 
 const _switchView=switchView;
 switchView=function(view){
@@ -1047,12 +1113,13 @@ switchView=function(view){
   _switchView(view);
   if(view==="challenges") loadChallenges();
   if(view==="admin"){
-    loadChallenges().then(renderAdminChallenges);
+    loadChallenges().then(async()=>{await renderAdminChallenges();await renderAdminParticipations();});
   }
 };
 
 window.CELAM_LOAD_CHALLENGES=loadChallenges;
 window.CELAM_RENDER_ADMIN_CHALLENGES=renderAdminChallenges;
+window.CELAM_RENDER_ADMIN_PARTICIPATIONS=renderAdminParticipations;
 
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 render();
