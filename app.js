@@ -852,7 +852,12 @@ async function getSharedParticipants(challengeId){
   const db=challengesDb();
   if(!db)return [];
   try{
-    const snap=await db.collection("challenges").doc(challengeId).collection("participants").orderBy("submittedAt","asc").get();
+    // La zona pública solo necesita participaciones publicadas.
+    // Filtramos en Firestore para que los documentos antiguos o pendientes
+    // no bloqueen la lectura de los usuarios normales por las Rules.
+    const snap=await db.collection("challenges").doc(challengeId).collection("participants")
+      .where("published","==",true)
+      .get();
     const rows=[];
     for(const d of snap.docs){
       const p={id:d.id,...d.data()};
