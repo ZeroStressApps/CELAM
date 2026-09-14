@@ -104,7 +104,7 @@ forgotPassword?.addEventListener("click", async () => {
   }
 
  try{
-  auth.languageCode = "es";
+  auth.languageCode = "en";
   await auth.sendPasswordResetEmail(email);
   showAuthMessage("Te hemos enviado un email para restablecer la contraseña.", false);
 }catch(error){
