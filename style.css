@@ -622,3 +622,7 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
   .ranking-year-selector{justify-content:stretch}
   .ranking-year-selector select{flex:1}
 }
+
+/* ===== ADMINISTRACIÓN: SEPARACIÓN POR AÑO ===== */
+.admin-year-selector{display:flex;align-items:center;gap:10px;margin:0 0 14px}.admin-year-selector label{font-size:14px;font-weight:700;color:var(--muted)}.admin-year-selector select{border:1px solid var(--line);background:var(--white);border-radius:12px;padding:9px 12px;font:inherit}.admin-participation-year{margin:0 34px 16px;color:var(--muted)}
+@media(max-width:700px){.admin-year-selector{align-items:stretch;flex-direction:column;gap:6px}.admin-year-selector select{width:100%}.admin-participation-year{margin-left:20px;margin-right:20px}}

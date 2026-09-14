@@ -1018,6 +1018,10 @@ async function openParticipationAdminDialog(challengeId,participantId){
     $("#adminParticipationChallengeId").value=challengeId;
     $("#adminParticipationUid").value=participantId;
     $("#adminParticipationName").textContent=p.name||"Participante";
+    const challengeSnap=await db.collection("challenges").doc(challengeId).get();
+    const challengeData=challengeSnap.exists?challengeSnap.data():{};
+    const participationYear=Number(challengeData.year)||Number(String(challengeData.month||"").slice(0,4));
+    $("#adminParticipationYearLabel") && ($("#adminParticipationYearLabel").textContent=participationYear||"—");
     $("#adminParticipationTitle").value=p.title||"";
     $("#adminParticipationText").value=p.text||"";
     $("#adminParticipationUrl").value=p.submissionUrl||"";
@@ -1054,10 +1058,14 @@ async function renderAdminParticipations(){
   if(!isChallengeAdmin()){box.innerHTML="";return;}
   const rows=await getAllParticipantsForAdmin();
   if(!rows.length){box.innerHTML="<div class='empty'>Todavía no hay participaciones recibidas.</div>";return;}
-  box.innerHTML=rows.map(({challenge:c,participant:p})=>`<article class="admin-challenge-row">
+  const years=[...new Set(rows.map(({challenge:c})=>Number(c.year)||Number(String(c.month||"").slice(0,4))).filter(Number.isFinite))].sort((a,b)=>b-a);
+  const stored=Number(box.dataset.year); const year=years.includes(stored)?stored:years[0]; box.dataset.year=String(year);
+  const filteredRows=rows.filter(({challenge:c})=>(Number(c.year)||Number(String(c.month||"").slice(0,4)))===year);
+  box.innerHTML=`<div class="admin-year-selector"><label for="adminParticipationYear">Año</label><select id="adminParticipationYear">${years.map(y=>`<option value="${y}" ${y===year?"selected":""}>${y}</option>`).join("")}</select></div>` + filteredRows.map(({challenge:c,participant:p})=>`<article class="admin-challenge-row">
     <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(p.name||"Participante")}</strong><small>${p.published?"🟢 Publicada":p.status==="rejected"?"⚪ No publicada":"🟠 Pendiente de revisión"}</small></div>
     <div class="admin-challenge-actions"><button class="challenge-edit" data-admin-participation="${esc(c.id)}|${esc(p.id)}">${p.published?"✎ Editar publicación":"👁 Revisar / publicar"}</button></div>
   </article>`).join("");
+  $("#adminParticipationYear")?.addEventListener("change",e=>{box.dataset.year=e.target.value;renderAdminParticipations();});
   box.querySelectorAll("[data-admin-participation]").forEach(btn=>{const [cid,pid]=btn.dataset.adminParticipation.split("|");btn.onclick=()=>openParticipationAdminDialog(cid,pid);});
 }
 
@@ -1072,7 +1080,10 @@ async function renderAdminChallenges(){
     box.innerHTML=`<div class="empty">Todavía no hay locuras creadas. Usa <strong>＋ Crear locura</strong> para preparar el primero.</div>`;
     return;
   }
-  box.innerHTML=CELAM_CHALLENGES.map(c=>`<article class="admin-challenge-row">
+  const years=[...new Set(CELAM_CHALLENGES.map(c=>Number(c.year)||Number(String(c.month||"").slice(0,4))).filter(Number.isFinite))].sort((a,b)=>b-a);
+  const stored=Number(box.dataset.year); const year=years.includes(stored)?stored:years[0]; box.dataset.year=String(year);
+  const filteredChallenges=CELAM_CHALLENGES.filter(c=>(Number(c.year)||Number(String(c.month||"").slice(0,4)))===year).sort((a,b)=>String(a.month||"").localeCompare(String(b.month||"")));
+  box.innerHTML=`<div class="admin-year-selector"><label for="adminChallengeYear">Año</label><select id="adminChallengeYear">${years.map(y=>`<option value="${y}" ${y===year?"selected":""}>${y}</option>`).join("")}</select></div>` + filteredChallenges.map(c=>`<article class="admin-challenge-row">
     <div><span class="eyebrow">${esc(challengeMonthLabel(c.month).toUpperCase())}</span><strong>${esc(c.title||"Locura CELAM")}</strong>${((c.protagonistNames||[c.protagonistName]).filter(Boolean).length ? `<small>⭐ ${esc((c.protagonistNames||[c.protagonistName]).filter(Boolean).join(", "))}</small>` : "")}
       <span class="challenge-admin-status ${c.published?"published":"draft"}">${c.published?"🟢 Publicado":"⚪ Borrador"}</span>
     </div>
@@ -1080,6 +1091,7 @@ async function renderAdminChallenges(){
   </article>`).join("");
   box.querySelectorAll("[data-admin-edit-challenge]").forEach(btn=>btn.onclick=()=>openChallengeDialog(CELAM_CHALLENGES.find(x=>x.id===btn.dataset.adminEditChallenge)));
   box.querySelectorAll("[data-admin-delete-challenge]").forEach(btn=>btn.onclick=()=>deleteChallenge(btn.dataset.adminDeleteChallenge));
+  $("#adminChallengeYear")?.addEventListener("change",e=>{box.dataset.year=e.target.value;renderAdminChallenges();});
   box.querySelectorAll("[data-admin-publish-challenge]").forEach(btn=>btn.onclick=()=>toggleChallengePublished(btn.dataset.adminPublishChallenge));
 }
 
