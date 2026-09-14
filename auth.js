@@ -12,7 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
 const authScreen = document.getElementById("authScreen");
-const loginForm = document.getElementById("loginForm");
+const loginForm = document.getElementById("authForm");
 const authTitle = document.getElementById("authTitle");
 const authSubtitle = document.getElementById("authSubtitle");
 const authMessage = document.getElementById("authMessage");
@@ -32,9 +32,9 @@ loginForm?.addEventListener("submit", async (e) => {
 
   showAuthMessage("");
 
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
-
+ const email = document.getElementById("authEmail").value.trim();
+ const password = document.getElementById("authPassword").value;
+  
   try{
     await auth.signInWithEmailAndPassword(email, password);
   }catch(error){
@@ -43,7 +43,7 @@ loginForm?.addEventListener("submit", async (e) => {
 });
 
 forgotPassword?.addEventListener("click", async () => {
-  const email = document.getElementById("loginEmail").value.trim();
+ const email = document.getElementById("authEmail").value.trim();
 
   if(!email){
     showAuthMessage("Escribe primero tu email y después pulsa aquí.");
