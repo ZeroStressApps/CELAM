@@ -997,7 +997,7 @@ async function renderSharedContent(){
   const months=[...new Set(published.map(c=>c.month).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
   const now=new Date();
   const currentKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const selected=months.includes(CURRENT_SHARED_MONTH)
+  const selected=(CURRENT_SHARED_MONTH === "__all__" || months.includes(CURRENT_SHARED_MONTH))
     ? CURRENT_SHARED_MONTH
     : (months.includes(currentKey) ? currentKey : months[0]);
   CURRENT_SHARED_MONTH=selected;
