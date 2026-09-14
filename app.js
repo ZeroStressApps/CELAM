@@ -575,6 +575,74 @@ let CELAM_AUDIO_RECORDER=null;
 let CELAM_AUDIO_CHUNKS=[];
 let CELAM_AUDIO_BLOB=null;
 let CELAM_AUDIO_TIMER=null;
+let CELAM_PHOTO_DATA_URLS=[];
+
+const CELAM_MAX_PHOTOS=3;
+const CELAM_MAX_PHOTO_BYTES=250000;
+const CELAM_MAX_INPUT_PHOTO_BYTES=10000000;
+const CELAM_MAX_MEDIA_BYTES=600000;
+
+function resetSharePhotos(){
+  CELAM_PHOTO_DATA_URLS=[];
+  const input=$("#sharePhotos"), preview=$("#sharePhotosPreview"), status=$("#sharePhotosStatus");
+  if(input)input.value="";
+  if(preview)preview.innerHTML="";
+  if(status)status.textContent="";
+}
+function dataUrlBytes(dataUrl){
+  const base64=String(dataUrl||"").split(",")[1]||"";
+  return Math.floor(base64.length*3/4);
+}
+function fileToCompressedDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    if(!file.type.startsWith("image/")){reject(new Error("not-image"));return;}
+    if(file.size>CELAM_MAX_INPUT_PHOTO_BYTES){reject(new Error("input-photo-too-large"));return;}
+    const img=new Image(), reader=new FileReader();
+    reader.onload=()=>{
+      img.onload=()=>{
+        const maxSide=1600;
+        const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
+        const canvas=document.createElement("canvas");
+        canvas.width=Math.max(1,Math.round(img.width*scale));
+        canvas.height=Math.max(1,Math.round(img.height*scale));
+        const ctx=canvas.getContext("2d");
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        let data=canvas.toDataURL("image/jpeg",0.72);
+        if(dataUrlBytes(data)>CELAM_MAX_PHOTO_BYTES)data=canvas.toDataURL("image/jpeg",0.55);
+        if(dataUrlBytes(data)>CELAM_MAX_PHOTO_BYTES){reject(new Error("photo-too-large"));return;}
+        resolve(data);
+      };
+      img.onerror=()=>reject(new Error("bad-image"));
+      img.src=reader.result;
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function handleSharePhotos(e){
+  const files=Array.from(e.target.files||[]), status=$("#sharePhotosStatus");
+  if(files.length>CELAM_MAX_PHOTOS){
+    alert(`Puedes añadir como máximo ${CELAM_MAX_PHOTOS} fotos.`);
+    e.target.value=""; return;
+  }
+  try{
+    const photos=[];
+    for(const file of files)photos.push(await fileToCompressedDataUrl(file));
+    const mediaBytes=photos.reduce((sum,x)=>sum+dataUrlBytes(x),0)+(CELAM_AUDIO_BLOB?.size||0);
+    if(mediaBytes>CELAM_MAX_MEDIA_BYTES){
+      alert("Las fotos y el audio ocupan demasiado juntos. Reduce el número de fotos o quita el audio.");
+      e.target.value=""; resetSharePhotos(); return;
+    }
+    CELAM_PHOTO_DATA_URLS=photos;
+    const preview=$("#sharePhotosPreview");
+    if(preview)preview.innerHTML=photos.map((src,i)=>`<img src="${esc(src)}" alt="Foto ${i+1}">`).join("");
+    if(status)status.textContent=photos.length?`${photos.length} foto${photos.length===1?"":"s"} preparada${photos.length===1?"":"s"} para publicar.`:"";
+  }catch(err){
+    console.error("CELAM: no se pudieron preparar las fotos",err);
+    alert("No se ha podido preparar una de las fotos. Prueba con una foto más pequeña.");
+    e.target.value=""; resetSharePhotos();
+  }
+}
 
 function resetShareAudio(){
   if(CELAM_AUDIO_RECORDER && CELAM_AUDIO_RECORDER.state!="inactive") CELAM_AUDIO_RECORDER.stop();
@@ -592,10 +660,18 @@ async function openShareParticipationDialog(challengeId){
   const c=CELAM_CHALLENGES.find(x=>x.id===challengeId); if(!c)return;
   const existing=await getMyParticipation(challengeId);
   resetShareAudio();
+  resetSharePhotos();
   $("#shareChallengeId").value=challengeId;
   $("#shareChallengeLabel").textContent=`${challengeMonthLabel(c.month)} · ${c.title||"Locura CELAM"}`;
   $("#shareParticipationStoryTitle").value=existing?.title||"";
   $("#shareParticipationText").value=existing?.text||"";
+  if(Array.isArray(existing?.photoData) && existing.photoData.length){
+    CELAM_PHOTO_DATA_URLS=existing.photoData.slice(0,CELAM_MAX_PHOTOS);
+    const preview=$("#sharePhotosPreview");
+    if(preview)preview.innerHTML=CELAM_PHOTO_DATA_URLS.map((src,i)=>`<img src="${esc(src)}" alt="Foto ${i+1}">`).join("");
+    const status=$("#sharePhotosStatus");
+    if(status)status.textContent=`${CELAM_PHOTO_DATA_URLS.length} foto${CELAM_PHOTO_DATA_URLS.length===1?"":"s"} ya compartida${CELAM_PHOTO_DATA_URLS.length===1?"":"s"}.`;
+  }
   $("#shareParticipationDialog").showModal();
 }
 
@@ -642,13 +718,19 @@ async function saveMyParticipation(e){
   const text=$("#shareParticipationText").value.trim();
   const title=$("#shareParticipationStoryTitle").value.trim();
   if(!text && !CELAM_AUDIO_BLOB){alert("Cuéntanos tu historia por escrito o con un audio antes de publicarla.");return;}
-  if(CELAM_AUDIO_BLOB && CELAM_AUDIO_BLOB.size>700000){alert("El audio es demasiado largo. Grábalo de nuevo intentando que dure menos de 90 segundos.");return;}
+  if(CELAM_AUDIO_BLOB && CELAM_AUDIO_BLOB.size>500000){alert("El audio es demasiado largo. Grábalo de nuevo intentando que dure menos de 90 segundos.");return;}
   const btn=$("#shareParticipationForm button[type=submit]"); if(btn)btn.disabled=true;
   try{
     const payload={uid,name:currentName(),title,text,published:true,status:"published",updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
     if(!$("#shareParticipationText").value.trim() && !CELAM_AUDIO_BLOB)payload.text="";
     if(CELAM_AUDIO_BLOB)payload.audioData=await blobToDataUrl(CELAM_AUDIO_BLOB);
     else payload.audioData="";
+    payload.photoData=CELAM_PHOTO_DATA_URLS.slice(0,CELAM_MAX_PHOTOS);
+    const totalMediaBytes=CELAM_PHOTO_DATA_URLS.reduce((sum,x)=>sum+dataUrlBytes(x),0)+(CELAM_AUDIO_BLOB?.size||0);
+    if(totalMediaBytes>CELAM_MAX_MEDIA_BYTES){
+      alert("Los archivos ocupan demasiado. Reduce las fotos o el audio antes de publicar.");
+      return;
+    }
     const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(uid);
     // Publicación directa: no hacemos un get() previo porque las reglas
     // permiten crear la participación, pero una lectura de un documento
@@ -725,16 +807,21 @@ async function renderChallenges(){
   const months=[...new Set(publicChallenges.map(x=>x.month).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
   const now=new Date();
   const currentKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const selected=months.includes(CURRENT_LOCURA_MONTH)
-    ? CURRENT_LOCURA_MONTH
-    : (months.includes(currentKey) ? currentKey : months[0]);
+  const selected=CURRENT_LOCURA_MONTH==="__all__"
+    ? "__all__"
+    : (months.includes(CURRENT_LOCURA_MONTH)
+      ? CURRENT_LOCURA_MONTH
+      : (months.includes(currentKey) ? currentKey : months[0]));
   CURRENT_LOCURA_MONTH=selected;
 
-  const visibleChallenges=publicChallenges.filter(challenge=>challenge.month===selected);
+  const visibleChallenges=selected==="__all__"
+    ? publicChallenges
+    : publicChallenges.filter(challenge=>challenge.month===selected);
   c.innerHTML=`
     <div class="month-filter">
       <label for="challengeMonthSelect">Mes</label>
       <select id="challengeMonthSelect">
+        <option value="__all__" ${selected==="__all__"?"selected":""}>Todos</option>
         ${months.map(m=>`<option value="${esc(m)}" ${m===selected?"selected":""}>${esc(challengeMonthLabel(m))}</option>`).join("")}
       </select>
     </div>
@@ -921,22 +1008,27 @@ async function renderSharedContent(){
   const months=[...new Set(published.map(c=>c.month).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
   const now=new Date();
   const currentKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const selected=months.includes(CURRENT_SHARED_MONTH)
-    ? CURRENT_SHARED_MONTH
-    : (months.includes(currentKey) ? currentKey : months[0]);
+  const selected=CURRENT_SHARED_MONTH==="__all__"
+    ? "__all__"
+    : (months.includes(CURRENT_SHARED_MONTH)
+      ? CURRENT_SHARED_MONTH
+      : (months.includes(currentKey) ? currentKey : months[0]));
   CURRENT_SHARED_MONTH=selected;
 
   box.innerHTML=`
     <div class="month-filter">
       <label for="sharedMonthSelect">Mes</label>
       <select id="sharedMonthSelect">
+        <option value="__all__" ${selected==="__all__"?"selected":""}>Todos</option>
         ${months.map(m=>`<option value="${esc(m)}" ${m===selected?"selected":""}>${esc(challengeMonthLabel(m))}</option>`).join("")}
       </select>
     </div>
     <div id="sharedMonthContent"></div>`;
 
   const me=currentUid();
-  const selectedChallenges=published.filter(c=>c.month===selected);
+  const selectedChallenges=selected==="__all__"
+    ? published
+    : published.filter(c=>c.month===selected);
   const chunks=[];
 
   for(const c of selectedChallenges){
@@ -958,6 +1050,7 @@ async function renderSharedContent(){
               ${p.title?`<div class="shared-entry-title">${esc(p.title)}</div>`:""}
               ${p.text?`<div class="shared-entry-text">${esc(p.text).replace(/\n/g,"<br>")}</div>`:""}
               ${p.audioData?`<audio class="shared-entry-audio" controls src="${esc(p.audioData)}"></audio>`:""}
+              ${Array.isArray(p.photoData)&&p.photoData.length?`<div class="shared-entry-photos">${p.photoData.map((src,i)=>`<img src="${esc(src)}" alt="Foto compartida ${i+1}" loading="lazy">`).join("")}</div>`:""}
               ${p.submissionUrl?`<a class="shared-submission-link" href="${esc(p.submissionUrl)}" target="_blank" rel="noopener noreferrer">📎 Ver su participación</a>`:""}
             </div>
             <div class="shared-entry-action">
@@ -1093,17 +1186,27 @@ async function appendRankingTable(challenges,box,emptyLabel){
     const snap=await db.collection("challenges").doc(c.id).collection("participants")
       .where("published","==",true)
       .get();
-    snap.forEach(d=>{
-      const p=d.data(),score=Number(p.score);
-      if(!Number.isFinite(score))return;
+    for(const d of snap.docs){
+      const p=d.data();
+      let likes=0;
+      try{
+        const likesSnap=await d.ref.collection("likes").get();
+        likesSnap.forEach(likeDoc=>{
+          const raw=Number(likeDoc.data()?.count);
+          likes+=Math.min(3,Math.max(1,Number.isFinite(raw)?raw:1));
+        });
+      }catch(e){
+        console.warn("CELAM: no se pudieron cargar los Me gusta para el ranking",e);
+      }
+      if(!likes)continue;
       totals[p.uid]=totals[p.uid]||{name:p.name||"Participante",points:0};
-      totals[p.uid].points+=score;
-    });
+      totals[p.uid].points+=likes;
+    }
   }
   const rows=Object.values(totals).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name));
   const table=rows.length
-    ? `<table class="ranking-table"><thead><tr><th>#</th><th>Participante</th><th>Puntos</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="ranking-place">${i<3?["🥇","🥈","🥉"][i]:i+1}</td><td>${esc(r.name)}</td><td><strong>${r.points}</strong></td></tr>`).join("")}</tbody></table>`
-    : `<div class="empty">Todavía no hay puntuaciones para ${emptyLabel}.</div>`;
+    ? `<table class="ranking-table"><thead><tr><th>#</th><th>Participante</th><th>💚 Me gusta</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="ranking-place">${i<3?["🥇","🥈","🥉"][i]:i+1}</td><td>${esc(r.name)}</td><td><strong>${r.points}</strong></td></tr>`).join("")}</tbody></table>`
+    : `<div class="empty">Todavía no hay Me gusta para ${emptyLabel}.</div>`;
   box.insertAdjacentHTML("beforeend",table);
 }
 
@@ -1281,8 +1384,9 @@ $("#adminParticipationForm")?.addEventListener("submit",saveAdminParticipation);
 $("#startAudioRecord")?.addEventListener("click",startAudioRecording);
 $("#stopAudioRecord")?.addEventListener("click",stopAudioRecording);
 $("#clearAudioRecord")?.addEventListener("click",resetShareAudio);
-$("#cancelShareParticipation")?.addEventListener("click",()=>{resetShareAudio();$("#shareParticipationDialog")?.close();});
-$("#closeShareParticipation")?.addEventListener("click",()=>{resetShareAudio();$("#shareParticipationDialog")?.close();});
+$("#cancelShareParticipation")?.addEventListener("click",()=>{resetShareAudio();resetSharePhotos();$("#shareParticipationDialog")?.close();});
+$("#closeShareParticipation")?.addEventListener("click",()=>{resetShareAudio();resetSharePhotos();$("#shareParticipationDialog")?.close();});
+$("#sharePhotos")?.addEventListener("change",handleSharePhotos);
 $("#shareParticipationForm")?.addEventListener("submit",saveMyParticipation);
 
 const _switchView=switchView;

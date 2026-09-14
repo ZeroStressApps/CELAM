@@ -1,4 +1,4 @@
-const CACHE = "celam-v31";
+const CACHE = "celam-v33";
 
 const FILES = [
   "./",

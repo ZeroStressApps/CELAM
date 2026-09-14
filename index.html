@@ -430,6 +430,13 @@
       <label>Cuéntanos tu historia
         <textarea id="shareParticipationText" rows="7" maxlength="5000" placeholder="Escribe aquí tu anécdota. No hace falta escribir mucho."></textarea>
       </label>
+      <div class="share-photo-box">
+        <div class="audio-recorder-title">📷 Si quieres, añade fotos</div>
+        <input id="sharePhotos" type="file" accept="image/*" multiple>
+        <small class="field-help">Máximo 3 fotos. Se comprimen automáticamente para que ocupen poco.</small>
+        <span id="sharePhotosStatus" class="field-help"></span>
+        <div id="sharePhotosPreview" class="share-photos-preview"></div>
+      </div>
       <div class="audio-recorder">
         <div class="audio-recorder-title">🎙️ Si prefieres, puedes contarla con tu voz</div>
         <small class="field-help">Pulsa grabar, habla y vuelve a pulsar para terminar. Máximo 90 segundos.</small>
