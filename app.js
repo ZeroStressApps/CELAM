@@ -772,7 +772,6 @@ async function renderChallengeCard(c){
       ${c.videoUrl?`<a class="challenge-video" href="${video}" target="_blank" rel="noopener">▶️ Ver vídeo</a>`:""}
       ${c.submissionUrl?`<a class="challenge-submit" href="${upload}" target="_blank" rel="noopener">📤 Subir mi participación</a>`:""}
       <button class="challenge-submit" data-share-challenge="${esc(c.id)}">${me?"✎ Editar mi locura":"✍️ Compartir mi locura"}</button>
-      ${canScore?`<button class="challenge-score" data-score-challenge="${esc(c.id)}">🏅 Puntuar participantes</button>`:""}
       ${isChallengeAdmin()?`<button class="challenge-edit" data-edit-challenge="${esc(c.id)}">✎ Editar</button>`:""}
     </div>
   </article>`;
@@ -798,7 +797,7 @@ async function renderChallenges(){
   const months=[...new Set(publicChallenges.map(x=>x.month).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
   const now=new Date();
   const currentKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const selected=months.includes(CURRENT_LOCURA_MONTH)
+  const selected=(CURRENT_LOCURA_MONTH === "__all__" || months.includes(CURRENT_LOCURA_MONTH))
     ? CURRENT_LOCURA_MONTH
     : (months.includes(currentKey) ? currentKey : months[0]);
   CURRENT_LOCURA_MONTH=selected;
@@ -814,7 +813,8 @@ async function renderChallenges(){
         ${months.map(m=>`<option value="${esc(m)}" ${m===selected?"selected":""}>${esc(challengeMonthLabel(m))}</option>`).join("")}
       </select>
     </div>
-    <div id="challengeMonthCards" class="challenge-list"></div>`;
+    <div id="challengeMonthCards" class="challenge-list"></div>
+    <div class="challenge-shared-below"><button class="primary-button" id="challengeSharedBtn">💚 Locuras compartidas</button></div>`;
   const cards=await Promise.all(visibleChallenges.map(renderChallengeCard));
   $("#challengeMonthCards").innerHTML=cards.join("");
   $("#challengeMonthSelect")?.addEventListener("change",e=>{
@@ -822,8 +822,11 @@ async function renderChallenges(){
     renderChallenges();
   });
   c.querySelectorAll("[data-share-challenge]").forEach(btn=>btn.onclick=()=>openShareParticipationDialog(btn.dataset.shareChallenge));
-  c.querySelectorAll("[data-score-challenge]").forEach(btn=>btn.onclick=()=>openScoreDialog(btn.dataset.scoreChallenge));
   c.querySelectorAll("[data-edit-challenge]").forEach(btn=>btn.onclick=()=>openChallengeDialog(CELAM_CHALLENGES.find(x=>x.id===btn.dataset.editChallenge)));
+  $("#challengeSharedBtn")?.addEventListener("click",async()=>{
+    $("#sharedPanel").hidden=false; await renderSharedContent();
+    $("#sharedPanel").scrollIntoView({behavior:"smooth",block:"start"});
+  });
 }
 
 function populateChallengeProtagonists(selectedIds=[]){
@@ -1349,10 +1352,6 @@ $("#challengeRankingBtn")?.addEventListener("click",async()=>{
   $("#rankingPanel").scrollIntoView({behavior:"smooth",block:"start"});
 });
 $("#closeRankingBtn")?.addEventListener("click",()=>$("#rankingPanel").hidden=true);
-$("#challengeSharedBtn")?.addEventListener("click",async()=>{
-  $("#sharedPanel").hidden=false; await renderSharedContent();
-  $("#sharedPanel").scrollIntoView({behavior:"smooth",block:"start"});
-});
 $("#closeSharedBtn")?.addEventListener("click",()=>$("#sharedPanel").hidden=true);
 document.querySelectorAll("[data-ranking]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-ranking]").forEach(x=>x.classList.toggle("active",x===b));renderRanking(b.dataset.ranking)});
 $("#addChallengeBtn")?.addEventListener("click",()=>openChallengeDialog());

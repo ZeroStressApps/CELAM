@@ -464,6 +464,7 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
 /* NUESTRAS LOCURAS */
 .challenge-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 20px}
 .challenge-list{display:grid;gap:18px}
+.challenge-shared-below{margin-top:2px;margin-bottom:20px}
 .challenge-card{background:var(--paper);border-radius:26px;padding:24px;box-shadow:var(--shadow);border-left:6px solid var(--sage)}
 .challenge-card.closed{opacity:.82}
 .challenge-card-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
