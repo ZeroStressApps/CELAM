@@ -648,8 +648,10 @@ async function saveMyParticipation(e){
     if(CELAM_AUDIO_BLOB)payload.audioData=await blobToDataUrl(CELAM_AUDIO_BLOB);
     else payload.audioData="";
     const ref=db.collection("challenges").doc(challengeId).collection("participants").doc(uid);
-    const existing=await ref.get();
-    if(!existing.exists)payload.submittedAt=firebase.firestore.FieldValue.serverTimestamp();
+    // Publicación directa: no hacemos un get() previo porque las reglas
+    // permiten crear la participación, pero una lectura de un documento
+    // todavía inexistente puede provocar permission-denied.
+    payload.submittedAt=firebase.firestore.FieldValue.serverTimestamp();
     await ref.set(payload,{merge:true});
     $("#shareParticipationDialog").close(); resetShareAudio();
     alert("💚 ¡Tu locura ya está compartida con la familia!");
