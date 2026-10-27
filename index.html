@@ -216,6 +216,17 @@
         <p>Desde aquí puedes preparar y gestionar las locuras mensuales. Esta zona solo está disponible para administradores.</p>
       </section>
 
+      <section class="admin-section" id="adminUsersSection">
+        <div class="section-heading compact">
+          <div><span class="eyebrow">ACCESO PRIVADO</span><h2>Usuarios autorizados</h2></div>
+          <button type="button" class="secondary-button" id="refreshAccessRequests">Actualizar solicitudes</button>
+        </div>
+        <p class="challenge-note">Laura S. puede autorizar las cuentas familiares. Comprueba el correo y asigna a cada cuenta su identidad familiar antes de aprobarla.</p>
+        <div id="adminAccessRequests" class="admin-challenge-list" aria-live="polite"><p class="challenge-note">Cargando solicitudes…</p></div>
+        <div class="section-heading compact" style="margin-top:18px"><div><span class="eyebrow">CUENTAS ACTIVAS</span><h3>Acceso concedido</h3></div></div>
+        <div id="adminAuthorizedUsers" class="admin-challenge-list" aria-live="polite"><p class="challenge-note">Cargando usuarios…</p></div>
+      </section>
+
       <section class="admin-section">
         <div class="section-heading compact">
           <div><span class="eyebrow">NUESTRAS LOCURAS</span><h2>Gestionar nuestras locuras</h2></div>
@@ -308,8 +319,9 @@
 
   <dialog id="accessDeniedDialog" class="identity-dialog">
     <div class="dialog-header"><div><span class="eyebrow">ACCESO PRIVADO</span><h2>Cuenta no autorizada</h2></div></div>
-    <p class="identity-intro">Esta cuenta todavía no ha sido autorizada por Laura S. para entrar en CELAM. La aceptación de la política no concede acceso por sí sola.</p>
-    <div class="dialog-actions"><button type="button" class="primary-button" id="deniedSignOut">Cerrar sesión</button></div>
+    <p class="identity-intro">Esta cuenta aún no tiene acceso. Comprueba que has iniciado sesión con tu correo habitual. Si es correcto, puedes enviar una solicitud a Laura S. La aceptación de la política no concede acceso por sí sola.</p>
+    <p id="accessRequestMessage" class="auth-message" role="status"></p>
+    <div class="dialog-actions"><button type="button" class="primary-button" id="requestAccessBtn">Solicitar acceso</button><button type="button" class="secondary-button" id="deniedSignOut">Cerrar sesión</button></div>
   </dialog>
 
   <dialog id="reminderDialog">

@@ -1,0 +1,20 @@
+CELAM - Administración de usuarios y solicitudes de acceso
+
+CAMBIOS DE INTERFAZ
+- La sección Administración incorpora solicitudes pendientes y cuentas autorizadas.
+- Una solicitud se crea en accessRequests/{uid} al pulsar “Solicitar acceso”.
+- Laura S. selecciona el miembro familiar y pulsa “Autorizar cuenta”.
+- La autorización se guarda en authorizedUsers/{uid}.
+- Laura S. puede desactivar el acceso con “Revocar acceso”.
+
+IMPORTANTE: LA UI NO SUSTITUYE LAS REGLAS DE FIRESTORE
+Antes de publicar, configura las reglas para que:
+1) Solo usuarios autenticados puedan crear su propia solicitud accessRequests/{uid}; solo pueden escribir uid y email de su propia cuenta y status=requested/pending.
+2) Solo la cuenta administradora de Laura S. pueda leer solicitudes, cambiar su estado y escribir authorizedUsers.
+3) Un usuario solo pueda leer su propio documento authorizedUsers/{uid}.
+4) Solo la administración pueda listar authorizedUsers.
+5) Solo usuarios autorizados y con consentimiento vigente puedan leer los datos privados.
+6) La comprobación de administrador no se base en un campo editable por el propio usuario. Debe basarse en una identidad administradora fijada de forma segura en reglas/claims.
+
+La interfaz usa accessRequests/{uid}, authorizedUsers/{uid} y privacyConsents/{uid}.
+No publiques una regla abierta temporalmente para que funcione la pantalla. La protección real depende de reglas Firestore cerradas.
