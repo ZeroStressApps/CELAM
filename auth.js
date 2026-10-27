@@ -403,12 +403,14 @@ async function handleAuthorizedSignIn(user){
       return;
     }
     pendingAuthorizedProfile=authorization;
+   
     const consent=await readConsent(user);
+
     if(consent.accepted === true && consent.policyVersion === PRIVACY_POLICY_VERSION){
-  await finalizeAuthorizedSession(user,authorization);
-  return;
-}
+      await finalizeAuthorizedSession(user,authorization);
+      return;
     }
+
     if(privacyConsentCheck) privacyConsentCheck.checked=false;
     if(acceptPrivacyConsent) acceptPrivacyConsent.disabled=true;
     setPrivacyMessage("");
