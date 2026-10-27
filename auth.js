@@ -404,9 +404,10 @@ async function handleAuthorizedSignIn(user){
     }
     pendingAuthorizedProfile=authorization;
     const consent=await readConsent(user);
-    if(consent.privacyConsentAccepted === true && consent.privacyConsentVersion === PRIVACY_POLICY_VERSION){
-      await finalizeAuthorizedSession(user,authorization);
-      return;
+    if(consent.accepted === true && consent.policyVersion === PRIVACY_POLICY_VERSION){
+  await finalizeAuthorizedSession(user,authorization);
+  return;
+}
     }
     if(privacyConsentCheck) privacyConsentCheck.checked=false;
     if(acceptPrivacyConsent) acceptPrivacyConsent.disabled=true;
