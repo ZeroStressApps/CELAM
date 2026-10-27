@@ -1,0 +1,63 @@
+CELAM · PRIVACIDAD · PASO 1 (control de acceso y consentimiento)
+
+IMPORTANTE
+Este archivo es una GUÍA DE INTEGRACIÓN, no sustituye todas las reglas actuales de CELAM.
+No publiques reglas nuevas reemplazando el archivo completo: el proyecto también tiene reglas para challenges, participants, likes y reminders.
+Este paso añade el mecanismo de autorización/consentimiento en el cliente. data.js todavía se sirve como archivo público en este paquete; por tanto, la privacidad completa NO queda resuelta hasta migrar sus datos personales y cerrar las reglas correspondientes.
+
+1. Autorizar cuentas
+En Firebase Console > Firestore Database crea una colección:
+  authorizedUsers
+
+Crea un documento cuyo ID sea el UID exacto de la cuenta de Firebase Authentication de cada persona autorizada.
+Campos requeridos:
+  enabled: true (boolean)
+  memberName: nombre exacto que aparece en CELAM/data.js (string)
+  role: "usuario" (string)
+
+Para la cuenta administradora de Laura S., role puede ser "administrador". No uses el nombre de Laura R. para su cuenta.
+No crees documentos para personas que no deban entrar. Deshabilitar a alguien se hace cambiando enabled a false.
+
+2. Reglas Firestore que deben integrarse con las reglas existentes
+Sustituye ADMIN_UID_AQUI por el UID de Laura S. No lo publiques en un sitio distinto de las reglas del proyecto.
+
+function isLauraS() {
+  return request.auth != null && request.auth.uid == "ADMIN_UID_AQUI";
+}
+function isAuthorizedFamily() {
+  return request.auth != null
+    && exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.uid))
+    && get(/databases/$(database)/documents/authorizedUsers/$(request.auth.uid)).data.enabled == true;
+}
+function hasCurrentPrivacyConsent() {
+  return isAuthorizedFamily()
+    && exists(/databases/$(database)/documents/privacyConsents/$(request.auth.uid))
+    && get(/databases/$(database)/documents/privacyConsents/$(request.auth.uid)).data.accepted == true
+    && get(/databases/$(database)/documents/privacyConsents/$(request.auth.uid)).data.policyVersion == "2026-10-27-v1";
+}
+
+match /authorizedUsers/{userId} {
+  allow read: if request.auth != null && request.auth.uid == userId;
+  allow create, update, delete: if isLauraS();
+}
+match /privacyConsents/{userId} {
+  allow read: if request.auth != null && request.auth.uid == userId;
+  allow create: if request.auth != null && request.auth.uid == userId
+    && isAuthorizedFamily()
+    && request.resource.data.keys().hasOnly(["uid", "accepted", "policyVersion", "acceptedAt"])
+    && request.resource.data.uid == request.auth.uid
+    && request.resource.data.accepted == true
+    && request.resource.data.policyVersion == "2026-10-27-v1";
+  allow update: if request.auth != null && request.auth.uid == userId
+    && isAuthorizedFamily()
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["accepted", "policyVersion", "acceptedAt"])
+    && request.resource.data.accepted == true
+    && request.resource.data.policyVersion == "2026-10-27-v1";
+  allow delete: if isLauraS();
+}
+
+3. Importante para el siguiente paso
+Estas reglas son solo las adiciones para authorization/consent. En las reglas de las colecciones familiares existentes, las condiciones de lectura y escritura deben exigir hasCurrentPrivacyConsent() (además de los controles de rol/protagonista que correspondan). No basta con pegar estas dos match y dejar las reglas anteriores sin cambios.
+
+4. Datos públicos
+El script index.html actualmente carga data.js de forma pública. Ese archivo contiene datos familiares y se descarga incluso sin iniciar sesión. No compartas ni publiques este paquete como una solución completa de privacidad hasta que la agenda y los datos personales se migren a Firestore y se elimine esa carga pública. El árbol genealógico y su imagen no se han modificado.

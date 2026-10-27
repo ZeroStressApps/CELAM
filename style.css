@@ -840,3 +840,11 @@ select{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px soli
     box-sizing:border-box;
   }
 }
+
+/* CELAM authorization and consent gate */
+body.celam-locked .topbar, body.celam-locked .user-bar, body.celam-locked .tabs, body.celam-locked main, body.celam-locked footer { display:none !important; }
+.privacy-policy-copy { max-height: 34vh; overflow:auto; line-height:1.5; color:var(--ink); font-size:14px; margin: 8px 0 14px; }
+.privacy-check { display:flex !important; grid-template-columns:none !important; align-items:flex-start; gap:10px !important; line-height:1.45; font-size:14px !important; font-weight:500 !important; margin:12px 0; }
+.privacy-check input { flex:0 0 auto; width:18px; height:18px; margin-top:2px; }
+.privacy-consent-dialog .dialog-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+.privacy-consent-dialog button:disabled { opacity:.45; cursor:not-allowed; }

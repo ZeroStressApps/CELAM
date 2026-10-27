@@ -14,7 +14,7 @@
   <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
   <title>CELAM</title>
 </head>
-<body>
+<body class="celam-locked">
 <div class="app-shell">
   <header class="topbar">
  <button class="icon-button" id="todayBtn" aria-label="Ir a hoy">⌂</button>
@@ -292,22 +292,24 @@
     </form>
   </dialog>
 
-  <dialog id="identityDialog" class="identity-dialog">
+  <dialog id="privacyConsentDialog" class="identity-dialog privacy-consent-dialog">
     <div class="dialog-header">
-      <div>
-        <span class="eyebrow">TU PERFIL EN CELAM</span>
-        <h2>¿Quién eres?</h2>
-      </div>
+      <div><span class="eyebrow">PRIVACIDAD CELAM</span><h2>Antes de entrar</h2></div>
     </div>
-    <p class="identity-intro">Selecciona tu nombre para que el resto de la familia sepa quién está escribiendo.</p>
-    <form id="identityForm">
-      <label>Tu nombre en CELAM
-        <select id="identityPerson" required></select>
-      </label>
-      <div class="dialog-actions">
-        <button type="submit" class="primary-button">Continuar</button>
-      </div>
-    </form>
+    <p class="identity-intro">CELAM es una aplicación familiar privada. Laura S. autoriza las cuentas que pueden acceder.</p>
+    <div class="privacy-policy-copy">
+      <p>Al aceptar, confirmas que entiendes que la información que compartas en CELAM podrá ser consultada por los miembros de la familia que Laura S. haya autorizado, y que tú también podrás consultar la información que esos miembros compartan.</p>
+      <p>La información se utiliza para las funciones familiares de CELAM. La aplicación usa Firebase como proveedor técnico de autenticación y almacenamiento. Los demás usuarios podrían copiar o compartir voluntariamente lo que ven; CELAM no puede impedirlo.</p>
+    </div>
+    <label class="privacy-check"><input id="privacyConsentCheck" type="checkbox"> <span>He leído y acepto la política de privacidad y el uso compartido de mis datos dentro de CELAM con las cuentas familiares autorizadas.</span></label>
+    <p id="privacyConsentMessage" class="auth-message" role="alert"></p>
+    <div class="dialog-actions"><button type="button" class="primary-button" id="acceptPrivacyConsent" disabled>Aceptar y continuar</button><button type="button" class="secondary-button" id="declinePrivacyConsent">No acepto, salir</button></div>
+  </dialog>
+
+  <dialog id="accessDeniedDialog" class="identity-dialog">
+    <div class="dialog-header"><div><span class="eyebrow">ACCESO PRIVADO</span><h2>Cuenta no autorizada</h2></div></div>
+    <p class="identity-intro">Esta cuenta todavía no ha sido autorizada por Laura S. para entrar en CELAM. La aceptación de la política no concede acceso por sí sola.</p>
+    <div class="dialog-actions"><button type="button" class="primary-button" id="deniedSignOut">Cerrar sesión</button></div>
   </dialog>
 
   <dialog id="reminderDialog">
