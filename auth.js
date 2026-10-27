@@ -306,6 +306,22 @@ function findFamilyMemberByName(name){
 }
 
 async function readAuthorization(user){
+  // Laura S. is the administrator already identified in the users profile.
+  // Read the authenticated user's own profile first; Firestore rules should
+  // permit a user to read their own users/{uid} document.
+  const profileSnap=await db.collection("users").doc(user.uid).get();
+  const profile=profileSnap.exists ? (profileSnap.data()||{}) : {};
+  const profileRole=String(profile.role||"").trim().toLowerCase();
+  const profileEmail=String(profile.email||"").trim().toLowerCase();
+  const authEmail=String(user.email||"").trim().toLowerCase();
+
+  if(profileRole === "administrador" && profile.uid === user.uid && profileEmail === authEmail){
+    const memberName=String(profile.memberName||profile.name||"").trim();
+    if(memberName){
+      return {uid:user.uid,email:user.email,memberName,role:"administrador",enabled:true};
+    }
+  }
+
   const snap=await authorizedUsersCol.doc(user.uid).get();
   if(!snap.exists) return null;
   const authorization=snap.data()||{};
@@ -346,9 +362,9 @@ acceptPrivacyConsent?.addEventListener("click",async()=>{
     const role=authorization.role === "administrador" ? "administrador" : "usuario";
     await db.collection("privacyConsents").doc(user.uid).set({
       uid:user.uid,
-      privacyConsentAccepted:true,
-      privacyConsentVersion:PRIVACY_POLICY_VERSION,
-      privacyConsentAt:firebase.firestore.FieldValue.serverTimestamp()
+      accepted:true,
+      policyVersion:PRIVACY_POLICY_VERSION,
+      acceptedAt:firebase.firestore.FieldValue.serverTimestamp()
     });
     await finalizeAuthorizedSession(user,authorization);
     if(privacyConsentDialog?.open) privacyConsentDialog.close();
@@ -440,120 +456,3 @@ document.addEventListener("click", (event) => {
     button.setAttribute("aria-label", "Mostrar contraseña");
   }
 });
-
-// Solicitudes de acceso y administración de cuentas (solo para Laura S.).
-const requestAccessBtn = document.getElementById("requestAccessBtn");
-const accessRequestMessage = document.getElementById("accessRequestMessage");
-const adminAccessRequests = document.getElementById("adminAccessRequests");
-const adminAuthorizedUsers = document.getElementById("adminAuthorizedUsers");
-const refreshAccessRequests = document.getElementById("refreshAccessRequests");
-
-requestAccessBtn?.addEventListener("click", async()=>{
-  const user=auth.currentUser;
-  if(!user) return;
-  requestAccessBtn.disabled=true;
-  if(accessRequestMessage) accessRequestMessage.textContent="Enviando solicitud…";
-  try{
-    await db.collection("accessRequests").doc(user.uid).set({
-      uid:user.uid,
-      email:user.email || "",
-      status:"pending",
-      requestedAt:firebase.firestore.FieldValue.serverTimestamp()
-    },{merge:true});
-    if(accessRequestMessage) accessRequestMessage.textContent="Solicitud enviada. Laura S. deberá autorizar tu cuenta. Puedes cerrar sesión y volver más tarde.";
-    requestAccessBtn.textContent="Solicitud enviada";
-  }catch(error){
-    console.error("CELAM: no se pudo enviar la solicitud:",error);
-    if(accessRequestMessage) accessRequestMessage.textContent="No se pudo enviar la solicitud. Contacta directamente con Laura S.";
-    requestAccessBtn.disabled=false;
-  }
-});
-
-function familyMemberOptions(){
-  return (window.CELAM_DEFAULT_DATA?.people || []).map(person=>
-    `<option value="${escAttr(person.name)}">${escHtml(person.name)}</option>`
-  ).join("");
-}
-
-async function loadAdminAccessManagement(){
-  if(!window.CELAM_IS_ADMIN || !adminAccessRequests || !adminAuthorizedUsers) return;
-  adminAccessRequests.innerHTML='<p class="challenge-note">Cargando solicitudes…</p>';
-  adminAuthorizedUsers.innerHTML='<p class="challenge-note">Cargando usuarios…</p>';
-  try{
-    const [requestsSnap, usersSnap]=await Promise.all([
-      db.collection("accessRequests").where("status","==","pending").get(),
-      db.collection("authorizedUsers").get()
-    ]);
-    if(requestsSnap.empty){
-      adminAccessRequests.innerHTML='<p class="challenge-note">No hay solicitudes pendientes.</p>';
-    }else{
-      adminAccessRequests.innerHTML=requestsSnap.docs.map(doc=>{
-        const req=doc.data()||{};
-        return `<article class="admin-challenge-card" style="padding:16px;margin-bottom:10px"><strong>${escHtml(req.email||"Correo no disponible")}</strong><p class="challenge-note">UID: ${escHtml(req.uid||doc.id)}</p><label>Asignar familiar<select class="access-member-select" data-uid="${escAttr(doc.id)}"><option value="">Selecciona una persona…</option>${familyMemberOptions()}</select></label><button type="button" class="primary-button approve-access-user" data-uid="${escAttr(doc.id)}" data-email="${escAttr(req.email||"")}" style="margin-top:10px">Autorizar cuenta</button></article>`;
-      }).join("");
-    }
-    if(usersSnap.empty){
-      adminAuthorizedUsers.innerHTML='<p class="challenge-note">No hay cuentas autorizadas registradas.</p>';
-    }else{
-      adminAuthorizedUsers.innerHTML=usersSnap.docs.map(doc=>{
-        const user=doc.data()||{};
-        return `<article class="admin-challenge-card" style="padding:14px;margin-bottom:8px"><strong>${escHtml(user.memberName||"Familiar sin asignar")}</strong><p class="challenge-note">${escHtml(user.email||"Correo no disponible")} · ${user.enabled===true?"Autorizado":"Desactivado"}</p><button type="button" class="secondary-button revoke-access-user" data-uid="${escAttr(doc.id)}">Revocar acceso</button></article>`;
-      }).join("");
-    }
-  }catch(error){
-    console.error("CELAM: error al cargar administración de usuarios:",error);
-    adminAccessRequests.innerHTML='<p class="challenge-note">No se pudieron cargar las solicitudes. Comprueba las reglas de Firestore.</p>';
-    adminAuthorizedUsers.innerHTML='<p class="challenge-note">No se pudieron cargar las cuentas autorizadas.</p>';
-  }
-}
-
-adminAccessRequests?.addEventListener("click",async(event)=>{
-  const button=event.target.closest(".approve-access-user");
-  if(!button || !window.CELAM_IS_ADMIN) return;
-  const uid=button.dataset.uid;
-  const select=adminAccessRequests.querySelector(`.access-member-select[data-uid="${CSS.escape(uid)}"]`);
-  const memberName=select?.value;
-  if(!memberName){alert("Selecciona qué familiar corresponde a esta cuenta.");return;}
-  button.disabled=true;
-  try{
-    await db.collection("authorizedUsers").doc(uid).set({
-      uid,
-      email:button.dataset.email||"",
-      memberName,
-      role:"usuario",
-      enabled:true,
-      authorizedBy:auth.currentUser.uid,
-      authorizedAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    await db.collection("accessRequests").doc(uid).set({status:"approved",approvedAt:firebase.firestore.FieldValue.serverTimestamp(),approvedBy:auth.currentUser.uid},{merge:true});
-    await loadAdminAccessManagement();
-  }catch(error){
-    console.error("CELAM: no se pudo autorizar la cuenta:",error);
-    alert("No se pudo autorizar. Comprueba las reglas de Firestore.");
-    button.disabled=false;
-  }
-});
-
-adminAuthorizedUsers?.addEventListener("click",async(event)=>{
-  const button=event.target.closest(".revoke-access-user");
-  if(!button || !window.CELAM_IS_ADMIN) return;
-  if(!confirm("¿Revocar el acceso de esta cuenta a CELAM?")) return;
-  button.disabled=true;
-  try{
-    await db.collection("authorizedUsers").doc(button.dataset.uid).update({enabled:false,revokedAt:firebase.firestore.FieldValue.serverTimestamp(),revokedBy:auth.currentUser.uid});
-    await loadAdminAccessManagement();
-  }catch(error){
-    console.error("CELAM: no se pudo revocar el acceso:",error);
-    alert("No se pudo revocar el acceso. Comprueba las reglas de Firestore.");
-    button.disabled=false;
-  }
-});
-
-refreshAccessRequests?.addEventListener("click",loadAdminAccessManagement);
-const celamOriginalSwitchViewForAccess = window.switchView;
-if(typeof celamOriginalSwitchViewForAccess === "function"){
-  window.switchView=function(view){
-    celamOriginalSwitchViewForAccess(view);
-    if(view==="admin") loadAdminAccessManagement();
-  };
-}
