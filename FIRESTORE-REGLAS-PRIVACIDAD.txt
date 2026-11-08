@@ -1,0 +1,94 @@
+CELAM - REGLAS FIRESTORE PRIVADAS
+Administradora única: Laura S. (UID fijado en estas reglas)
+Documento familiar: familyData/main
+Versión de consentimiento: 2026-10-27-v1
+
+IMPORTANTE: NO aplicar hasta haber publicado la versión nueva de CELAM y
+haber cargado familyData/main con migrar-datos.html. Si se aplican antes,
+la versión actual no podrá leer los datos familiares.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isLauraS() {
+      return signedIn() && request.auth.uid == "lqWElrZXexdLnROvWAcwj3WNTNI2";
+    }
+
+    function isAuthorizedFamily() {
+      return isLauraS() || (
+        signedIn()
+        && exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.uid))
+        && get(/databases/$(database)/documents/authorizedUsers/$(request.auth.uid)).data.enabled == true
+      );
+    }
+
+    function hasCurrentPrivacyConsent() {
+      return isAuthorizedFamily()
+        && exists(/databases/$(database)/documents/privacyConsents/$(request.auth.uid))
+        && get(/databases/$(database)/documents/privacyConsents/$(request.auth.uid)).data.accepted == true
+        && get(/databases/$(database)/documents/privacyConsents/$(request.auth.uid)).data.policyVersion == "2026-10-27-v1";
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isLauraS());
+      allow create, update, delete: if isLauraS();
+
+      match /reminders/{reminderId} {
+        allow read, create, update, delete:
+          if signedIn() && request.auth.uid == userId && hasCurrentPrivacyConsent();
+      }
+    }
+
+    match /authorizedUsers/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isLauraS());
+      allow list: if isLauraS();
+      allow create, update, delete: if isLauraS();
+    }
+
+    match /privacyConsents/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isLauraS());
+      allow list: if isLauraS();
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && isAuthorizedFamily()
+        && request.resource.data.keys().hasOnly(["uid", "accepted", "policyVersion", "acceptedAt"])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.accepted == true
+        && request.resource.data.policyVersion == "2026-10-27-v1";
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && isAuthorizedFamily()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["accepted", "policyVersion", "acceptedAt"])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.accepted == true
+        && request.resource.data.policyVersion == "2026-10-27-v1";
+      allow delete: if isLauraS();
+    }
+
+    match /familyData/{documentId} {
+      allow read: if documentId == "main" && hasCurrentPrivacyConsent();
+      allow create, update, delete: if documentId == "main" && isLauraS();
+    }
+
+    match /accessRequests/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isLauraS());
+      allow list: if isLauraS();
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(["uid", "email", "status", "createdAt"])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.status == "requested";
+      allow update, delete: if isLauraS();
+    }
+
+    // Funcionalidad retirada. Se bloquean los datos antiguos sin borrarlos.
+    match /challenges/{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

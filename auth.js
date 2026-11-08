@@ -298,9 +298,21 @@ function setCurrentUserContext(user, familyMember = null, role = "usuario"){
   if(currentUserName) currentUserName.textContent = familyMember?.name || "";
 }
 
+let CELAM_PRIVATE_FAMILY_DATA = null;
+
+async function loadPrivateFamilyData(){
+  const snap=await db.collection("familyData").doc("main").get();
+  if(!snap.exists) throw new Error("Aún no se han migrado los datos familiares a Firestore.");
+  const familyData=snap.data()||{};
+  if(!Array.isArray(familyData.people)) throw new Error("El documento familyData/main no contiene la lista de familiares.");
+  CELAM_PRIVATE_FAMILY_DATA=familyData;
+  if(typeof window.CELAM_LOAD_FAMILY_DATA === "function") window.CELAM_LOAD_FAMILY_DATA(familyData);
+  return familyData;
+}
+
 function findFamilyMemberByName(name){
   const normalized = String(name || "").trim().toLowerCase();
-  return (CELAM_DEFAULT_DATA.people || []).find(person =>
+  return (CELAM_PRIVATE_FAMILY_DATA?.people || []).find(person =>
     String(person.name || "").trim().toLowerCase() === normalized
   ) || null;
 }
@@ -334,6 +346,8 @@ async function readConsent(user){
 }
 
 async function finalizeAuthorizedSession(user, authorization){
+  // La información familiar solo se descarga después de comprobar autorización y consentimiento.
+  await loadPrivateFamilyData();
   const memberName=String(authorization.memberName||"").trim();
   const familyMember=findFamilyMemberByName(memberName);
   if(!memberName || !familyMember){

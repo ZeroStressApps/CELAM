@@ -126,8 +126,18 @@ async function saveReminders(){
 let data={
   year:Number(CELAM_DEFAULT_DATA.year)||2026,
   theme:CELAM_DEFAULT_DATA.theme||"Nuestro año juntos",
-  people:Array.isArray(CELAM_DEFAULT_DATA.people)?CELAM_DEFAULT_DATA.people.map(p=>Object.freeze({...p})):[],
+  people:[],
   reminders:[]
+};
+
+// Solo auth.js puede llamar a esta función después de validar autorización y consentimiento.
+window.CELAM_LOAD_FAMILY_DATA=function(remoteData){
+  if(!remoteData || !Array.isArray(remoteData.people)) throw new Error("Los datos familiares de Firestore no tienen el formato esperado.");
+  data.year=Number(remoteData.year)||2026;
+  data.theme=String(remoteData.theme||"Nuestro año juntos");
+  data.people=remoteData.people.map(person=>Object.freeze({...person}));
+  viewDate=new Date(data.year,new Date().getMonth(),1);
+  render();
 };
 
 let viewDate=new Date(data.year,new Date().getMonth(),1);
