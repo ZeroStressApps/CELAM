@@ -848,3 +848,9 @@ body.celam-locked .topbar, body.celam-locked .user-bar, body.celam-locked .tabs,
 .privacy-check input { flex:0 0 auto; width:18px; height:18px; margin-top:2px; }
 .privacy-consent-dialog .dialog-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
 .privacy-consent-dialog button:disabled { opacity:.45; cursor:not-allowed; }
+
+/* Administración de accesos familiares */
+.admin-access-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.admin-access-actions select{min-width:210px;max-width:100%;border:1px solid var(--line);background:var(--white);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit}
+.admin-challenge-row .error{color:#a33}
+@media(max-width:700px){.admin-access-actions{display:grid;grid-template-columns:1fr}.admin-access-actions select{width:100%;min-width:0}}

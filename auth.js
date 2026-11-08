@@ -257,6 +257,9 @@ const declinePrivacyConsent = document.getElementById("declinePrivacyConsent");
 const privacyConsentMessage = document.getElementById("privacyConsentMessage");
 const accessDeniedDialog = document.getElementById("accessDeniedDialog");
 const deniedSignOut = document.getElementById("deniedSignOut");
+const requestAccessBtn = document.getElementById("requestAccessBtn");
+const accessRequestMessage = document.getElementById("accessRequestMessage");
+const accessRequestsCol = db.collection("accessRequests");
 let pendingAuthorizedProfile = null;
 let pendingAuthUser = null;
 
@@ -318,26 +321,16 @@ function findFamilyMemberByName(name){
 }
 
 async function readAuthorization(user){
-  // Laura S. is the administrator already identified in the users profile.
-  // Read the authenticated user's own profile first; Firestore rules should
-  // permit a user to read their own users/{uid} document.
-  const profileSnap=await db.collection("users").doc(user.uid).get();
-  const profile=profileSnap.exists ? (profileSnap.data()||{}) : {};
-  const profileRole=String(profile.role||"").trim().toLowerCase();
-  const profileEmail=String(profile.email||"").trim().toLowerCase();
-  const authEmail=String(user.email||"").trim().toLowerCase();
-
-  if(profileRole === "administrador" && profile.uid === user.uid && profileEmail === authEmail){
-    const memberName=String(profile.memberName||profile.name||"").trim();
-    if(memberName){
-      return {uid:user.uid,email:user.email,memberName,role:"administrador",enabled:true};
-    }
+  // La identidad administradora se fija por UID, nunca por un rol editable desde el cliente.
+  if(user.uid === "lqWElrZXexdLnROvWAcwj3WNTNI2"){
+    return {uid:user.uid,email:user.email||"",memberName:"Laura S.",role:"administrador",enabled:true};
   }
-
   const snap=await authorizedUsersCol.doc(user.uid).get();
   if(!snap.exists) return null;
   const authorization=snap.data()||{};
-  return authorization.enabled === true ? authorization : null;
+  return authorization.enabled === true
+    ? {...authorization,uid:user.uid,role:"usuario"}
+    : null;
 }
 
 async function readConsent(user){
@@ -398,6 +391,34 @@ declinePrivacyConsent?.addEventListener("click",async()=>{
   await auth.signOut();
 });
 
+requestAccessBtn?.addEventListener("click",async()=>{
+  const user=pendingAuthUser || auth.currentUser;
+  if(!user || !user.email) return;
+  requestAccessBtn.disabled=true;
+  if(accessRequestMessage){accessRequestMessage.textContent="Enviando solicitud…";accessRequestMessage.classList.remove("error");}
+  try{
+    const requestRef=accessRequestsCol.doc(user.uid);
+    const previous=await requestRef.get();
+    if(previous.exists && previous.data()?.status==="requested"){
+      if(accessRequestMessage){accessRequestMessage.textContent="Tu solicitud ya está pendiente de revisión por Laura S.";accessRequestMessage.classList.add("success");}
+      requestAccessBtn.textContent="Solicitud pendiente";
+      return;
+    }
+    await requestRef.set({
+      uid:user.uid,
+      email:user.email,
+      status:"requested",
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    if(accessRequestMessage){accessRequestMessage.textContent="Solicitud enviada. Laura S. revisará tu acceso.";accessRequestMessage.classList.add("success");}
+    requestAccessBtn.textContent="Solicitud enviada";
+  }catch(error){
+    console.error("CELAM: no se pudo enviar la solicitud:",error);
+    if(accessRequestMessage){accessRequestMessage.textContent="No se ha podido enviar la solicitud. Comprueba la conexión e inténtalo de nuevo.";accessRequestMessage.classList.add("error");}
+    requestAccessBtn.disabled=false;
+  }
+});
+
 deniedSignOut?.addEventListener("click",async()=>{
   if(accessDeniedDialog?.open) accessDeniedDialog.close();
   pendingAuthUser=null;
@@ -455,6 +476,95 @@ auth.onAuthStateChanged(async(user)=>{
     setAuthMode(false);
   }
 });
+
+
+/* =========================
+   GESTIÓN REAL DE ACCESOS
+   ========================= */
+const adminRequestsEl=document.getElementById("adminAccessRequests");
+const adminUsersEl=document.getElementById("adminAuthorizedUsers");
+const refreshAccessRequests=document.getElementById("refreshAccessRequests");
+const FAMILY_ADMIN_UID="lqWElrZXexdLnROvWAcwj3WNTNI2";
+
+function adminMessage(el,message,isError=false){
+  if(!el)return;
+  el.innerHTML=`<p class="challenge-note ${isError?"error":""}">${escHtml(message)}</p>`;
+}
+function familyMemberOptions(selected=""){
+  const people=CELAM_PRIVATE_FAMILY_DATA?.people||[];
+  return `<option value="">Selecciona el familiar…</option>`+people.map(p=>{
+    const name=String(p.name||"");
+    return `<option value="${escAttr(name)}" ${name===selected?"selected":""}>${escHtml(name)}</option>`;
+  }).join("");
+}
+async function loadAdminAccessLists(){
+  if(!window.CELAM_IS_ADMIN || auth.currentUser?.uid!==FAMILY_ADMIN_UID)return;
+  adminMessage(adminRequestsEl,"Cargando solicitudes…");
+  adminMessage(adminUsersEl,"Cargando cuentas autorizadas…");
+  try{
+    const [requestsSnap,usersSnap]=await Promise.all([
+      db.collection("accessRequests").get(),
+      db.collection("authorizedUsers").get()
+    ]);
+    const requests=requestsSnap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.status==="requested"||r.status==="pending");
+    const users=usersSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.enabled===true);
+    if(!requests.length)adminMessage(adminRequestsEl,"No hay solicitudes pendientes.");
+    else adminRequestsEl.innerHTML=requests.map(r=>`<article class="admin-challenge-row"><div><strong>${escHtml(r.email||"Sin email")}</strong><small>UID: ${escHtml(r.uid||r.id)}</small><small>Estado: ${escHtml(r.status||"requested")}</small></div><div class="admin-access-actions"><select aria-label="Familiar para ${escAttr(r.email||r.id)}" id="family-${escAttr(r.id)}">${familyMemberOptions()}</select><button type="button" class="primary-button" data-approve-access="${escAttr(r.id)}">Autorizar cuenta</button></div></article>`).join("");
+    if(!users.length)adminMessage(adminUsersEl,"Todavía no hay cuentas familiares autorizadas.");
+    else adminUsersEl.innerHTML=users.map(u=>`<article class="admin-challenge-row"><div><strong>${escHtml(u.memberName||"Familiar sin asignar")}</strong><small>${escHtml(u.email||"Sin email")}</small><small>UID: ${escHtml(u.id)}</small></div><button type="button" class="secondary-button" data-revoke-access="${escAttr(u.id)}">Revocar acceso</button></article>`).join("");
+  }catch(error){
+    console.error("CELAM: error cargando administración:",error);
+    adminMessage(adminRequestsEl,"No se han podido cargar las solicitudes. Comprueba las reglas de Firestore.",true);
+    adminMessage(adminUsersEl,"No se han podido cargar las cuentas autorizadas.",true);
+  }
+}
+
+async function approveFamilyAccess(uid){
+  const requestSnap=await db.collection("accessRequests").doc(uid).get();
+  if(!requestSnap.exists)throw new Error("La solicitud ya no existe.");
+  const request=requestSnap.data()||{};
+  const select=document.getElementById(`family-${uid}`);
+  const memberName=String(select?.value||"").trim();
+  if(!memberName)throw new Error("Selecciona primero el familiar al que corresponde esta cuenta.");
+  const person=(CELAM_PRIVATE_FAMILY_DATA?.people||[]).find(p=>p.name===memberName);
+  if(!person)throw new Error("No se encuentra ese familiar en los datos de CELAM.");
+  const batch=db.batch();
+  batch.set(db.collection("authorizedUsers").doc(uid),{
+    uid,email:String(request.email||""),memberName,role:"usuario",enabled:true,
+    authorizedAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  batch.set(db.collection("accessRequests").doc(uid),{
+    uid,email:String(request.email||""),status:"approved",memberName,
+    reviewedAt:firebase.firestore.FieldValue.serverTimestamp()
+  },{merge:true});
+  await batch.commit();
+  await loadAdminAccessLists();
+}
+async function revokeFamilyAccess(uid){
+  await db.collection("authorizedUsers").doc(uid).update({enabled:false,revokedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  await db.collection("privacyConsents").doc(uid).delete().catch(error=>{if(error.code!=="permission-denied"&&error.code!=="not-found")throw error;});
+  await loadAdminAccessLists();
+}
+adminRequestsEl?.addEventListener("click",async event=>{
+  const button=event.target.closest("[data-approve-access]");if(!button)return;
+  button.disabled=true;
+  try{await approveFamilyAccess(button.dataset.approveAccess);}
+  catch(error){alert(error.message||"No se ha podido autorizar la cuenta.");button.disabled=false;}
+});
+adminUsersEl?.addEventListener("click",async event=>{
+  const button=event.target.closest("[data-revoke-access]");if(!button)return;
+  const uid=button.dataset.revokeAccess;
+  if(!confirm("¿Seguro que quieres retirar el acceso a esta cuenta?"))return;
+  button.disabled=true;
+  try{await revokeFamilyAccess(uid);}
+  catch(error){alert("No se ha podido revocar el acceso. Comprueba las reglas de Firestore.");button.disabled=false;}
+});
+refreshAccessRequests?.addEventListener("click",loadAdminAccessLists);
+const originalSwitchView=window.switchView;
+window.switchView=function(view){
+  originalSwitchView(view);
+  if(view==="admin")loadAdminAccessLists();
+};
 
 document.addEventListener("click", (event) => {
   const button = event.target.closest(".toggle-password");

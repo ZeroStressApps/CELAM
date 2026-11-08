@@ -83,7 +83,17 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.status == "requested";
-      allow update, delete: if isLauraS();
+      // Permite volver a solicitar acceso si una solicitud anterior ya fue revisada.
+      allow update: if (isLauraS()) || (
+        signedIn()
+        && request.auth.uid == userId
+        && resource.data.status != "requested"
+        && request.resource.data.keys().hasOnly(["uid", "email", "status", "createdAt"])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.status == "requested"
+      );
+      allow delete: if isLauraS();
     }
 
     // Funcionalidad retirada. Se bloquean los datos antiguos sin borrarlos.

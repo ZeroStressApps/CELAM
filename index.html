@@ -260,7 +260,7 @@
     <p class="identity-intro">CELAM es una aplicación familiar privada. Laura S. autoriza las cuentas que pueden acceder.</p>
     <div class="privacy-policy-copy">
       <p>Al aceptar, confirmas que entiendes que la información que compartas en CELAM podrá ser consultada por los miembros de la familia que Laura S. haya autorizado, y que tú también podrás consultar la información que esos miembros compartan.</p>
-      <p>La información se utiliza para las funciones familiares de CELAM. La aplicación usa Firebase como proveedor técnico de autenticación y almacenamiento. Los demás usuarios podrían copiar o compartir voluntariamente lo que ven; CELAM no puede impedirlo.</p>
+      <p>Los datos familiares se guardan en una base de datos de Firebase del proyecto CELAM y no se publican como una lista o archivo abierto en la web. Google/Firebase actúa como proveedor técnico de autenticación y almacenamiento. Solo las cuentas autorizadas y con consentimiento vigente pueden consultar los datos desde CELAM. Los demás usuarios podrían copiar o compartir voluntariamente lo que ven; CELAM no puede impedirlo.</p>
     </div>
     <label class="privacy-check"><input id="privacyConsentCheck" type="checkbox"> <span>He leído y acepto la política de privacidad y el uso compartido de mis datos dentro de CELAM con las cuentas familiares autorizadas.</span></label>
     <p id="privacyConsentMessage" class="auth-message" role="alert"></p>
@@ -269,8 +269,9 @@
 
   <dialog id="accessDeniedDialog" class="identity-dialog">
     <div class="dialog-header"><div><span class="eyebrow">ACCESO PRIVADO</span><h2>Cuenta no autorizada</h2></div></div>
-    <p class="identity-intro">Esta cuenta aún no tiene acceso a CELAM. Comprueba que has iniciado sesión con tu correo habitual. Si es correcto, mándale un WhatsApp a Laura S. pidiéndole acceso. La aceptación de la política de privacidad no concede acceso por sí sola.</p>
-    <div class="dialog-actions"><button type="button" class="secondary-button" id="deniedSignOut">Cerrar sesión</button></div>
+    <p class="identity-intro">Esta cuenta aún no tiene acceso a CELAM. Si has iniciado sesión con tu correo habitual, puedes enviar una solicitud a Laura S. La aceptación de la política de privacidad no concede acceso por sí sola.</p>
+    <p id="accessRequestMessage" class="auth-message" aria-live="polite"></p>
+    <div class="dialog-actions"><button type="button" class="primary-button" id="requestAccessBtn">Solicitar acceso</button><button type="button" class="secondary-button" id="deniedSignOut">Cerrar sesión</button></div>
   </dialog>
 
   <dialog id="reminderDialog">

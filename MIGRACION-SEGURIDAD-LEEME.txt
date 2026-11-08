@@ -1,40 +1,9 @@
-CELAM - MIGRACIÓN A DATOS PRIVADOS EN FIRESTORE
+CELAM - ESTADO DE LA MIGRACIÓN
 
-NO apliques las reglas hasta completar la carga de datos y publicar esta versión.
+La migración de los 57 familiares a Firestore se completó correctamente en familyData/main.
+La herramienta puntual migrar-datos.html se ha retirado de este paquete para que no quede publicada en GitHub Pages.
 
-ARCHIVOS
-- data.js: ya no contiene datos personales.
-- auth.js/app.js: cargan familyData/main después de verificar autorización y consentimiento.
-- migrar-datos.html: utilidad temporal para cargar el JSON en Firestore.
-- FIRESTORE-REGLAS-PRIVACIDAD.txt: reglas definitivas propuestas.
-- Árbol genealógico: se conserva en assets, sin modificarlo. Como acordamos, seguirá siendo descargable públicamente.
+No vuelvas a ejecutar ni reconstruir una migración completa: los cambios individuales realizados en Firestore deben conservarse.
+Las fichas familiares se consultan desde familyData/main después de validar la autorización y el consentimiento.
 
-ORDEN DE MIGRACIÓN
-1. Conserva una copia del ZIP estable anterior y del JSON privado.
-2. Descomprime este ZIP y publica su contenido en GitHub Pages. No subas el JSON privado.
-3. En Firestore > Reglas, añade temporalmente dentro de `match /databases/{database}/documents { ... }` este bloque. No reemplaces las reglas actuales todavía:
-
-   match /familyData/{documentId} {
-     allow create, update: if request.auth != null
-       && request.auth.uid == "lqWElrZXexdLnROvWAcwj3WNTNI2"
-       && documentId == "main";
-   }
-
-   Publica esas reglas temporales.
-4. Abre la URL de tu CELAM publicada seguida de /migrar-datos.html.
-5. Inicia sesión con la cuenta administradora y selecciona CELAM-datos-familiares-PRIVADO.json.
-6. Comprueba el mensaje de migración completada.
-7. En Firebase > Firestore > Datos, comprueba que existe familyData/main y que people contiene los 57 registros.
-8. SOLO entonces copia FIRESTORE-REGLAS-PRIVACIDAD.txt y sustituye las reglas de Firestore por su contenido. Publica las reglas.
-9. Cierra sesión en CELAM, recarga completamente y vuelve a entrar con Laura. Acepta el consentimiento si vuelve a solicitarlo.
-10. Prueba agenda, calendario, árbol genealógico y recordatorios.
-11. Autoriza y prueba una cuenta familiar normal. Comprueba también con una cuenta NO autorizada que no puede entrar.
-12. Cuando todo funcione, elimina migrar-datos.html del repositorio y vuelve a publicar. La herramienta no contiene datos personales, pero no es necesaria después de la migración.
-
-IMPORTANTE
-- No subas CELAM-datos-familiares-PRIVADO.json a GitHub.
-- No borres los documentos antiguos ni el ZIP estable.
-- Las reglas bloquean los retos antiguos sin borrar sus documentos.
-- El árbol genealógico se mantiene público deliberadamente, según la decisión acordada.
-- La copia local de recordatorios puede seguir visible solo en el dispositivo donde se guardó; los recordatorios remotos quedan protegidos por las reglas.
-- No se ha probado contra tu proyecto Firebase real. La validación final debe hacerse siguiendo los pasos anteriores.
+La imagen del árbol genealógico permanece sin modificaciones.

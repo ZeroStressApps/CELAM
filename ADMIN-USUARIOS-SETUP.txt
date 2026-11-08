@@ -1,20 +1,27 @@
-CELAM - Administración de usuarios y solicitudes de acceso
+CELAM - ADMINISTRACIÓN DE CUENTAS FAMILIARES
 
-CAMBIOS DE INTERFAZ
-- La sección Administración incorpora solicitudes pendientes y cuentas autorizadas.
-- Una solicitud se crea en accessRequests/{uid} al pulsar “Solicitar acceso”.
-- Laura S. selecciona el miembro familiar y pulsa “Autorizar cuenta”.
-- La autorización se guarda en authorizedUsers/{uid}.
-- Laura S. puede desactivar el acceso con “Revocar acceso”.
+FUNCIONAMIENTO
+- Una cuenta nueva inicia sesión y puede enviar una solicitud desde la pantalla de acceso denegado.
+- La solicitud queda guardada en accessRequests/{uid}.
+- Laura S. abre Administración, selecciona a qué familiar corresponde la cuenta y pulsa Autorizar cuenta.
+- La autorización queda en authorizedUsers/{uid}; el consentimiento de privacidad se registra por separado.
+- Laura S. puede retirar el acceso con Revocar acceso. La autorización queda desactivada y se elimina el consentimiento guardado.
+- Una cuenta revocada puede volver a solicitar acceso.
 
-IMPORTANTE: LA UI NO SUSTITUYE LAS REGLAS DE FIRESTORE
-Antes de publicar, configura las reglas para que:
-1) Solo usuarios autenticados puedan crear su propia solicitud accessRequests/{uid}; solo pueden escribir uid y email de su propia cuenta y status=requested/pending.
-2) Solo la cuenta administradora de Laura S. pueda leer solicitudes, cambiar su estado y escribir authorizedUsers.
-3) Un usuario solo pueda leer su propio documento authorizedUsers/{uid}.
-4) Solo la administración pueda listar authorizedUsers.
-5) Solo usuarios autorizados y con consentimiento vigente puedan leer los datos privados.
-6) La comprobación de administrador no se base en un campo editable por el propio usuario. Debe basarse en una identidad administradora fijada de forma segura en reglas/claims.
+IMPORTANTE
+- Solo el UID administrador fijado en las reglas puede aprobar, listar y revocar cuentas.
+- La aplicación no concede acceso por aceptar la política: hacen falta autorización y consentimiento vigente.
+- La imagen del árbol genealógico se conserva sin cambios y sigue siendo un archivo estático de GitHub Pages. No contiene los datos de contacto de Firestore.
+- No vuelvas a ejecutar una migración de datos: familyData/main ya está cargado.
+- Publica primero los archivos de la aplicación. Después aplica FIRESTORE-REGLAS-PRIVACIDAD.txt en Firebase > Firestore > Reglas. No publiques reglas temporales abiertas.
+- La primera entrada de Laura S. tras el cambio puede pedirle aceptar la política actualizada.
 
-La interfaz usa accessRequests/{uid}, authorizedUsers/{uid} y privacyConsents/{uid}.
-No publiques una regla abierta temporalmente para que funcione la pantalla. La protección real depende de reglas Firestore cerradas.
+PRUEBAS QUE DEBEN HACERSE DESPUÉS DE PUBLICAR
+1. Entrar como Laura S. y comprobar que carga el calendario y aparece Administración.
+2. Desde una cuenta familiar de prueba no autorizada, enviar una solicitud.
+3. Como Laura S., autorizarla asignándole un familiar.
+4. Entrar con esa cuenta y aceptar la política.
+5. Como Laura S., revocar el acceso y comprobar que al volver a iniciar sesión ya no puede entrar.
+6. Confirmar que una cuenta no autorizada no puede leer familyData/main.
+
+No se ha realizado una prueba en vivo contra Firebase desde este paquete; las pruebas anteriores requieren publicarlo en el proyecto real.
