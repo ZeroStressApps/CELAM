@@ -471,5 +471,4 @@ const CELAM_DEFAULT_DATA = {
     }
   ],
   "reminders": [],
-  "challenges": []
 };

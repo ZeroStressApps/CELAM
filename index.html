@@ -41,7 +41,6 @@
   <nav class="tabs" aria-label="Secciones">
     <button class="tab active" data-view="calendar">📅 Calendario</button>
     <button class="tab" data-view="agenda">👨‍👩‍👧 Agenda</button>
-    <button class="tab" data-view="challenges">🤪 Nuestras locuras</button>
     <button class="tab" data-view="tree">🪾 Árbol</button>
   </nav>
 
@@ -175,45 +174,11 @@
       <div id="remindersList" class="reminders-list"></div>
     </section>
 
-
-    <section id="challengesView" class="view">
-      <section class="page-heading">
-        <span class="eyebrow">NUESTRAS LOCURAS DE ESTE AÑO</span>
-        <h2>Este año toca... anécdotas familiares</h2>
-        <p>Cada mes lanzaremos un tema y podrás compartir acécdotas sobre él, votar las de otros celameros y recibir votos por las tuyas.</p>
-      </section>
-
-      
-
-      <div id="challengeList" class="challenge-list"></div>
-
-      <section class="ranking-panel" id="sharedPanel" hidden>
-        <div class="section-heading compact">
-          <div><span class="eyebrow">COMPARTIDAS</span><h2>Anécdotas compartidas</h2></div>
-          <button class="close-button" id="closeSharedBtn" aria-label="Cerrar">×</button>
-        </div>
-        <p class="challenge-note">Aquí puedes ver lo que han compartido los demás y votar tus favoritas. No puedes votar tu propia anécdota</p>
-        <div id="sharedContent"></div>
-      </section>
-
-      <section class="ranking-panel" id="rankingPanel" hidden>
-        <div class="section-heading compact">
-          <div><span class="eyebrow">CLASIFICACIÓN</span><h2>Ranking CELAM</h2></div>
-          <button class="close-button" id="closeRankingBtn" aria-label="Cerrar">×</button>
-        </div>
-        <div class="ranking-tabs">
-          <button class="ranking-tab active" data-ranking="monthly">Mensual</button>
-          <button class="ranking-tab" data-ranking="annual">Anual</button>
-        </div>
-        <div id="rankingContent"></div>
-      </section>
-    </section>
-
     <section id="adminView" class="view admin-view">
       <section class="page-heading">
         <span class="eyebrow">ADMINISTRACIÓN</span>
         <h2>Administración de CELAM</h2>
-        <p>Desde aquí puedes preparar y gestionar las locuras mensuales. Esta zona solo está disponible para administradores.</p>
+        <p>Desde aquí puedes gestionar las cuentas familiares autorizadas. Esta zona solo está disponible para administradores.</p>
       </section>
 
       <section class="admin-section" id="adminUsersSection">
@@ -225,21 +190,6 @@
         <div id="adminAccessRequests" class="admin-challenge-list" aria-live="polite"><p class="challenge-note">Cargando solicitudes…</p></div>
         <div class="section-heading compact" style="margin-top:18px"><div><span class="eyebrow">CUENTAS ACTIVAS</span><h3>Acceso concedido</h3></div></div>
         <div id="adminAuthorizedUsers" class="admin-challenge-list" aria-live="polite"><p class="challenge-note">Cargando usuarios…</p></div>
-      </section>
-
-      <section class="admin-section">
-        <div class="section-heading compact">
-          <div><span class="eyebrow">NUESTRAS LOCURAS</span><h2>Gestionar nuestras locuras</h2></div>
-          <button class="primary-button" id="adminAddChallengeBtn">＋ Crear locura</button>
-        </div>
-        <div id="adminChallengeList" class="admin-challenge-list"></div>
-      </section>
-      <section class="admin-section" id="adminParticipationSection">
-        <div class="section-heading compact">
-          <div><span class="eyebrow">PARTICIPACIONES</span><h2>Participaciones recibidas</h2></div>
-        </div>
-        <p class="challenge-note">Aquí puedes ver todas las participaciones. Las nuevas se publican directamente; desde aquí puedes editarlas, ocultarlas o eliminarlas si hace falta.</p>
-        <div id="adminParticipationList" class="admin-challenge-list"></div>
       </section>
     </section>
 
@@ -353,118 +303,6 @@
         <button type="submit" class="primary-button">Guardar recordatorio</button>
       </div>
     </form>
-  </dialog>
-
-
-  <dialog id="challengeDialog" class="challenge-dialog">
-    <div class="dialog-header">
-      <div><span class="eyebrow">NUESTRAS LOCURAS</span><h2 id="challengeDialogTitle">Crear anécdota</h2></div>
-      <button class="close-button" id="closeChallenge" aria-label="Cerrar">×</button>
-    </div>
-    <form id="challengeForm">
-      <input type="hidden" id="challengeId">
-      <label>Título de la anécdota
-        <input id="challengeTitle" type="text" placeholder="Ej. Reto del mes de agosto">
-      </label>
-      <label>Mes
-        <input id="challengeMonth" type="month">
-        <small class="field-help">El año de la locura lo determina el mes que elijas.</small>
-      </label>
-      <label>¿En qué consiste?
-        <textarea id="challengeDescription" rows="4" placeholder="Explica la actividad de forma sencilla."></textarea>
-      </label>
-      <label>Vídeo (YouTube)
-        <input id="challengeVideoUrl" type="url" placeholder="https://www.youtube.com/...">
-      </label>
-      <label>Enlace para subir la participación
-        <input id="challengeSubmissionUrl" type="url" placeholder="https://...">
-      </label>
-      <div class="dialog-actions">
-        <button type="button" class="secondary-button" id="cancelChallenge">Cancelar</button>
-        <button type="submit" class="primary-button">Guardar locura</button>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog id="adminParticipationDialog" class="challenge-dialog">
-    <div class="dialog-header">
-      <div><span class="eyebrow">PARTICIPACIÓN</span><h2 id="adminParticipationDialogTitle">Gestionar participación</h2></div>
-      <button class="close-button" id="closeAdminParticipation" aria-label="Cerrar">×</button>
-    </div>
-    <form id="adminParticipationForm">
-      <input type="hidden" id="adminParticipationChallengeId">
-      <input type="hidden" id="adminParticipationUid">
-      <p class="challenge-note"><strong id="adminParticipationName">Participante</strong></p>
-        <p class="admin-participation-year"><strong>Año de la locura:</strong> <span id="adminParticipationYearLabel">—</span></p>
-      <label>Título de la historia
-        <input id="adminParticipationTitle" type="text" placeholder="Ej. La escapada que salió regular">
-      </label>
-      <label>Historia
-        <textarea id="adminParticipationText" rows="7" placeholder="Escribe o pega aquí la anécdota que quieres mostrar a la familia."></textarea>
-      </label>
-      <label>Enlace al archivo (opcional)
-        <input id="adminParticipationUrl" type="url" placeholder="https://...">
-      </label>
-      <label>Estado
-        <select id="adminParticipationStatus">
-          <option value="published">🟢 Publicada</option>
-          <option value="rejected">⚪ Oculta</option>
-        </select>
-      </label>
-      <div class="dialog-actions">
-        <button type="button" class="secondary-button" id="cancelAdminParticipation">Cancelar</button>
-        <button type="submit" class="primary-button">Guardar</button>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog id="shareParticipationDialog" class="challenge-dialog">
-    <div class="dialog-header">
-      <div><span class="eyebrow">NUESTRAS LOCURAS</span><h2 id="shareParticipationTitle">Compartir mi anécdota</h2></div>
-      <button class="close-button" id="closeShareParticipation" aria-label="Cerrar">×</button>
-    </div>
-    <form id="shareParticipationForm">
-      <input type="hidden" id="shareChallengeId">
-      <p class="challenge-note" id="shareChallengeLabel"></p>
-      <label>Título (opcional)
-        <input id="shareParticipationStoryTitle" type="text" maxlength="120" placeholder="Ej. La escapada que salió regular">
-      </label>
-      <label>Cuéntanos tu historia
-        <textarea id="shareParticipationText" rows="7" maxlength="5000" placeholder="Escribe aquí tu anécdota. No hace falta escribir mucho."></textarea>
-      </label>
-      <div class="share-photo-box">
-        <div class="audio-recorder-title">📷 Si quieres, añade fotos</div>
-        <input id="sharePhotos" type="file" accept="image/*" multiple>
-        <small class="field-help">Máximo 3 fotos. Se comprimen automáticamente para que ocupen poco.</small>
-        <span id="sharePhotosStatus" class="field-help"></span>
-        <div id="sharePhotosPreview" class="share-photos-preview"></div>
-      </div>
-      <div class="audio-recorder">
-        <div class="audio-recorder-title">🎙️ Si prefieres, puedes contarla con tu voz</div>
-        <small class="field-help">Pulsa grabar, habla y vuelve a pulsar para terminar. Máximo 90 segundos.</small>
-        <div class="audio-recorder-actions">
-          <button type="button" class="secondary-button" id="startAudioRecord">🎙️ Grabar audio</button>
-          <button type="button" class="secondary-button" id="stopAudioRecord" hidden>⏹️ Terminar</button>
-          <button type="button" class="secondary-button" id="clearAudioRecord" hidden>🗑️ Borrar audio</button>
-        </div>
-        <span id="audioRecordStatus" class="field-help"></span>
-        <audio id="shareAudioPreview" controls hidden></audio>
-      </div>
-      <p class="challenge-note share-public-note">💚 Al pulsar publicar, tu historia quedará visible para toda la familia.</p>
-      <div class="dialog-actions">
-        <button type="button" class="secondary-button" id="cancelShareParticipation">Cancelar</button>
-        <button type="submit" class="primary-button">💚 Publicar mi anécdota</button>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog id="scoreDialog" class="challenge-dialog">
-    <div class="dialog-header">
-      <div><span class="eyebrow">PUNTUAR PARTICIPACIONES</span><h2 id="scoreDialogTitle">Puntuaciones</h2></div>
-      <button class="close-button" id="closeScore" aria-label="Cerrar">×</button>
-    </div>
-    <p class="challenge-note">Los administradores y los protagonistas de esta locura pueden puntuar de 0 a 10. Los puntos se guardan en CELAM y alimentan el ranking mensual y anual.</p>
-    <div id="scoreList"></div>
   </dialog>
 
   <dialog id="birthdayPopup" class="birthday-popup">
