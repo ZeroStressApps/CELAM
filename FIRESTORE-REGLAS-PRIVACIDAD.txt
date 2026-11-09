@@ -27,10 +27,13 @@ service cloud.firestore {
     }
 
     function hasCurrentPrivacyConsent() {
-      return isAuthorizedFamily()
+      // La administradora entra directamente por UID y no necesita consentimiento previo.
+      return isLauraS() || (
+        isAuthorizedFamily()
         && exists(/databases/$(database)/documents/privacyConsents/$(request.auth.uid))
         && get(/databases/$(database)/documents/privacyConsents/$(request.auth.uid)).data.accepted == true
-        && get(/databases/$(database)/documents/privacyConsents/$(request.auth.uid)).data.policyVersion == "2026-10-27-v1";
+        && get(/databases/$(database)/documents/privacyConsents/$(request.auth.uid)).data.policyVersion == "2026-10-27-v1"
+      );
     }
 
     match /users/{userId} {

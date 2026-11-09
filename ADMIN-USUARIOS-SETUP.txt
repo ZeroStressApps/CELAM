@@ -25,3 +25,6 @@ PRUEBAS QUE DEBEN HACERSE DESPUÉS DE PUBLICAR
 6. Confirmar que una cuenta no autorizada no puede leer familyData/main.
 
 No se ha realizado una prueba en vivo contra Firebase desde este paquete; las pruebas anteriores requieren publicarlo en el proyecto real.
+
+
+NOTA ADMINISTRADORA (v2): el UID fijo de Laura S. tiene acceso directo sin solicitud ni consentimiento previo. Las reglas definitivas también deben incluir isLauraS() como excepción en hasCurrentPrivacyConsent(). No aplicar reglas hasta publicar y comprobar esta versión.

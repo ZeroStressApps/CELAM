@@ -249,6 +249,7 @@ function escAttr(value=""){
 
 
 const PRIVACY_POLICY_VERSION = "2026-10-27-v1";
+const FAMILY_ADMIN_UID = "lqWElrZXexdLnROvWAcwj3WNTNI2";
 const authorizedUsersCol = db.collection("authorizedUsers");
 const privacyConsentDialog = document.getElementById("privacyConsentDialog");
 const privacyConsentCheck = document.getElementById("privacyConsentCheck");
@@ -322,7 +323,7 @@ function findFamilyMemberByName(name){
 
 async function readAuthorization(user){
   // La identidad administradora se fija por UID, nunca por un rol editable desde el cliente.
-  if(user.uid === "lqWElrZXexdLnROvWAcwj3WNTNI2"){
+  if(user.uid === FAMILY_ADMIN_UID){
     return {uid:user.uid,email:user.email||"",memberName:"Laura S.",role:"administrador",enabled:true};
   }
   const snap=await authorizedUsersCol.doc(user.uid).get();
@@ -484,7 +485,6 @@ auth.onAuthStateChanged(async(user)=>{
 const adminRequestsEl=document.getElementById("adminAccessRequests");
 const adminUsersEl=document.getElementById("adminAuthorizedUsers");
 const refreshAccessRequests=document.getElementById("refreshAccessRequests");
-const FAMILY_ADMIN_UID="lqWElrZXexdLnROvWAcwj3WNTNI2";
 
 function adminMessage(el,message,isError=false){
   if(!el)return;

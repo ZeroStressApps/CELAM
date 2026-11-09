@@ -1,4 +1,4 @@
-const CACHE = "celam-v34";
+const CACHE = "celam-v35-admin-direct";
 
 const FILES = [
   "./",

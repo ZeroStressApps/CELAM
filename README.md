@@ -52,3 +52,6 @@ Esta versión añade autenticación mediante Firebase Authentication (email y co
 La configuración de Firebase está en `auth.js`. Los recordatorios siguen en `localStorage`
 por ahora y no se modifican en esta fase. La siguiente fase migrará los recordatorios a Firestore
 manteniendo una migración segura de los datos existentes.
+
+
+NOTA ADMINISTRADORA (v2): el UID fijo de Laura S. tiene acceso directo sin solicitud ni consentimiento previo. Las reglas definitivas también deben incluir isLauraS() como excepción en hasCurrentPrivacyConsent(). No aplicar reglas hasta publicar y comprobar esta versión.
