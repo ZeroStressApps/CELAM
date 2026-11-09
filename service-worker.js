@@ -1,4 +1,4 @@
-const CACHE = "celam-v38-recordatorios-hora-calendario-inicio";
+const CACHE = "celam-v39-calendario-tras-login";
 
 const FILES = [
   "./",

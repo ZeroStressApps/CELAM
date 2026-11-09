@@ -353,6 +353,10 @@ async function finalizeAuthorizedSession(user, authorization){
   if(authScreen) authScreen.hidden=true;
   if(userBar) userBar.hidden=false;
   setLocked(false);
+  // Cada inicio de sesión autorizado comienza siempre en Calendario.
+  // Se ejecuta después de cargar los datos y desbloquear la app, para que
+  // no prevalezca una vista anterior restaurada por el navegador.
+  if(typeof window.switchView === "function") window.switchView("calendar");
   if(window.CELAM_SET_REMINDER_USER) window.CELAM_SET_REMINDER_USER(user,memberName);
 }
 
