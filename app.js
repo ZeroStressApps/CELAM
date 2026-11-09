@@ -461,21 +461,43 @@ function openReminder(reminder=null){
   $("#reminderDialog").showModal();
 }
 function checkDueReminders(){
-  const today=new Date(),key=dateKey(today.getFullYear(),today.getMonth()+1,today.getDate());
+  const now=new Date();
+  const key=dateKey(now.getFullYear(),now.getMonth()+1,now.getDate());
   if(!REMINDER_USER_UID)return;
+  const popup=$("#birthdayPopup");
+  if(!popup || popup.open)return;
+
   const popupKey=popupStorageKey();
   let shown=[];
-  try{shown=JSON.parse(localStorage.getItem(popupKey)||"[]")}catch(e){}
-  const due=data.reminders.filter(r=>!r.done&&r.date===key&&!shown.includes(r.id||`${r.title}-${r.date}`));
+  try{
+    shown=JSON.parse(localStorage.getItem(popupKey)||"[]");
+    if(!Array.isArray(shown))shown=[];
+  }catch(e){shown=[]}
+
+  const due=data.reminders
+    .filter(r=>{
+      if(r.done || r.date!==key)return false;
+      const id=String(r.id||`${r.title}-${r.date}`);
+      if(shown.includes(id))return false;
+      // Si no se indicó hora, el recordatorio puede mostrarse durante ese día.
+      // Si hay hora, esperamos hasta que llegue.
+      if(r.time){
+        const [hours,minutes]=String(r.time).split(":").map(Number);
+        if(now.getHours()*60+now.getMinutes()<hours*60+minutes)return false;
+      }
+      return true;
+    })
+    .sort((a,b)=>String(a.time||"00:00").localeCompare(String(b.time||"00:00")));
+
   if(!due.length)return;
-  const r=due[0],id=r.id||`${r.title}-${r.date}`;
-  shown.push(id);localStorage.setItem(popupKey,JSON.stringify(shown.slice(-100)));
+  const r=due[0],id=String(r.id||`${r.title}-${r.date}`);
   $("#popupTitle").textContent="No te olvides de felicitar a...";
-  $("#popupText").textContent=r.title;
-  $("#birthdayPopup").showModal();
-  if("Notification"in window&&Notification.permission==="granted"){
-    try{new Notification("CELAM",{body:`No te olvides de felicitar a... ${r.title}`})}catch(e){}
-  }
+  $("#popupText").textContent=[r.title,r.note].filter(Boolean).join(" · ");
+  popup.dataset.reminderId=id;
+  popup.showModal();
+  // Se marca como mostrado solo cuando la ventana se ha abierto correctamente.
+  shown.push(id);
+  try{localStorage.setItem(popupKey,JSON.stringify(shown.slice(-100)))}catch(e){}
 }
 function switchView(view){
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===view));
@@ -517,12 +539,10 @@ $("#reminderForm")?.addEventListener("submit",e=>{
   saveReminders().finally(()=>{ EDITING_REMINDER_ID=""; $("#reminderDialog").close(); render(); });
 });
 
-$("#notificationBtn")?.addEventListener("click",async()=>{
-  if(!("Notification"in window)){alert("Este navegador no admite avisos.");return}
-  const p=await Notification.requestPermission();
-  alert(p==="granted"?"Avisos activados. CELAM podrá mostrarte el aviso cuando abras la app ese día.":"No se han activado los avisos.");
+$("#closeBirthdayPopup")?.addEventListener("click",()=>{
+  $("#birthdayPopup").close();
+  setTimeout(checkDueReminders,250);
 });
-$("#closeBirthdayPopup")?.addEventListener("click",()=>$("#birthdayPopup").close());
 
 
 /* =========================
@@ -539,3 +559,7 @@ switchView=function(view){
 
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 render();
+// CELAM siempre inicia en Calendario, sin restaurar la última sección visitada.
+switchView("calendar");
+// Comprueba los recordatorios periódicamente mientras la app está abierta.
+setInterval(checkDueReminders,15000);

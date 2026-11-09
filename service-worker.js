@@ -1,4 +1,4 @@
-const CACHE = "celam-v37-resolicitud-tras-revocacion";
+const CACHE = "celam-v38-recordatorios-hora-calendario-inicio";
 
 const FILES = [
   "./",
