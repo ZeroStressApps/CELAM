@@ -340,14 +340,15 @@ async function readConsent(user){
 }
 
 async function finalizeAuthorizedSession(user, authorization){
-  // La información familiar solo se descarga después de comprobar autorización y consentimiento.
+  // La administradora tiene identidad propia: no necesita figurar en people ni en authorizedUsers.
+  const isAdmin = user.uid === FAMILY_ADMIN_UID;
   await loadPrivateFamilyData();
-  const memberName=String(authorization.memberName||"").trim();
-  const familyMember=findFamilyMemberByName(memberName);
+  const memberName = isAdmin ? "Laura S." : String(authorization.memberName||"").trim();
+  const familyMember = isAdmin ? { name: "Laura S." } : findFamilyMemberByName(memberName);
   if(!memberName || !familyMember){
     throw new Error("La autorización no contiene un miembro familiar válido. Revisa authorizedUsers.");
   }
-  const role=authorization.role === "administrador" ? "administrador" : "usuario";
+  const role = isAdmin ? "administrador" : "usuario";
   setCurrentUserContext(user,familyMember,role);
   if(authScreen) authScreen.hidden=true;
   if(userBar) userBar.hidden=false;
@@ -433,13 +434,23 @@ async function handleAuthorizedSignIn(user){
   pendingAuthUser=user;
   pendingAuthorizedProfile=null;
   try{
+    // Excepción absoluta por UID: la administradora entra sin autorización ni consentimiento familiar.
+    if(user.uid === FAMILY_ADMIN_UID){
+      const adminAuthorization={uid:user.uid,email:user.email||"",memberName:"Laura S.",role:"administrador",enabled:true};
+      pendingAuthorizedProfile=adminAuthorization;
+      await finalizeAuthorizedSession(user,adminAuthorization);
+      if(privacyConsentDialog?.open) privacyConsentDialog.close();
+      if(accessDeniedDialog?.open) accessDeniedDialog.close();
+      return;
+    }
+
     const authorization=await readAuthorization(user);
     if(!authorization){
       if(accessDeniedDialog && !accessDeniedDialog.open) accessDeniedDialog.showModal();
       return;
     }
     pendingAuthorizedProfile=authorization;
-   
+
     const consent=await readConsent(user);
 
     if(consent.accepted === true && consent.policyVersion === PRIVACY_POLICY_VERSION){

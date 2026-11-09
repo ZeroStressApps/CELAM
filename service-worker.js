@@ -1,4 +1,4 @@
-const CACHE = "celam-v35-admin-direct";
+const CACHE = "celam-v36-admin-bypass-admin-direct";
 
 const FILES = [
   "./",
