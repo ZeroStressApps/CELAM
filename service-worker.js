@@ -1,4 +1,4 @@
-const CACHE = "celam-v39-calendario-tras-login";
+const CACHE = "celam-v40-restyling-movil";
 
 const FILES = [
   "./",
