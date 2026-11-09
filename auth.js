@@ -406,6 +406,8 @@ requestAccessBtn?.addEventListener("click",async()=>{
       requestAccessBtn.textContent="Solicitud pendiente";
       return;
     }
+    // set() sin merge reemplaza la solicitud anterior (approved/revoked)
+    // por una nueva solicitud pendiente, conservando el mismo UID como ID.
     await requestRef.set({
       uid:user.uid,
       email:user.email,
@@ -552,8 +554,20 @@ async function approveFamilyAccess(uid){
   await loadAdminAccessLists();
 }
 async function revokeFamilyAccess(uid){
-  await db.collection("authorizedUsers").doc(uid).update({enabled:false,revokedAt:firebase.firestore.FieldValue.serverTimestamp()});
-  await db.collection("privacyConsents").doc(uid).delete().catch(error=>{if(error.code!=="permission-denied"&&error.code!=="not-found")throw error;});
+  // Retirar el permiso y marcar la solicitud anterior como revocada.
+  // Así queda constancia del historial y el usuario puede volver a solicitar acceso.
+  const batch=db.batch();
+  batch.update(db.collection("authorizedUsers").doc(uid),{
+    enabled:false,
+    revokedAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  batch.set(db.collection("accessRequests").doc(uid),{
+    uid,
+    status:"revoked",
+    revokedAt:firebase.firestore.FieldValue.serverTimestamp()
+  },{merge:true});
+  batch.delete(db.collection("privacyConsents").doc(uid));
+  await batch.commit();
   await loadAdminAccessLists();
 }
 adminRequestsEl?.addEventListener("click",async event=>{
