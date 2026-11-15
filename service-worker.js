@@ -1,4 +1,4 @@
-const CACHE = "celam-v46-icono-santo-asset-incluido";
+const CACHE = "celam-v47-santo-emoji-inline";
 
 const FILES = [
   "./",
@@ -10,7 +10,6 @@ const FILES = [
   "./manifest.webmanifest",
   "./assets/celam-logo.png",
   "./assets/familia-miron-ortega.png",
-  "./assets/santo-angel.png"
 ];
 
 self.addEventListener("install", event => {
