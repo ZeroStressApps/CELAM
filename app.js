@@ -195,7 +195,7 @@ function renderTodayCelebrations(){
   const list=$("#todayCelebrationsList");
   if(!list)return;
   $("#todayCelebrationsTitle").textContent="Hoy celebramos...";
-  list.innerHTML=items.length?items.map(e=>`<article class="today-celebration-item ${e.type}"><span class="today-celebration-icon" aria-hidden="true">${e.type==="birthday"?"🎂":"<img src='${SAINT_ICON_SRC}' alt=''>"}</span><div><strong>${esc(e.title.replace(/^🎂 /,""))}</strong><span>${e.type==="birthday"?"Cumpleaños":"Santo"}</span></div></article>`).join(""):`<p class="today-celebrations-empty">Hoy no hay cumpleaños ni santos.</p>`;
+  list.innerHTML=items.length?items.map(e=>`<article class="today-celebration-item ${e.type}"><span class="today-celebration-icon" aria-hidden="true">${e.type==="birthday"?"🎂":"<img src='${SAINT_ICON_SRC}' alt=''>"}</span><div><strong>${esc(e.title.replace(/^🎂 /,""))}</strong><span>${e.type==="birthday"?"Cumpleaños":""}</span></div></article>`).join(""):`<p class="today-celebrations-empty">Hoy no hay cumpleaños ni santos.</p>`;
 }
 
 function renderCalendar(){
@@ -221,7 +221,7 @@ function renderMonthEvents(){
     const d=birthdayDate(p,y);
     if(d&&d.getMonth()+1===m)items.push({day:d.getDate(),icon:"🎂",title:p.name,detail:`Cumpleaños`});
     const s=saintDateFor(p,y);
-    if(s&&s.getMonth()+1===m)items.push({day:s.getDate(),icon:"saint",title:p.name,detail:`Santo · ${s.getDate()} de ${MONTHS[m-1].toLowerCase()}`});
+    if(s&&s.getMonth()+1===m)items.push({day:s.getDate(),icon:"saint",title:p.name,detail:`${s.getDate()} de ${MONTHS[m-1].toLowerCase()}`});
   });
   data.reminders.filter(r=>!r.done&&r.date.startsWith(`${y}-${String(m).padStart(2,"0")}-`)).forEach(r=>items.push({day:Number(r.date.slice(-2)),icon:"🔔",title:r.title,detail:r.time?`${r.date.slice(-2)} de ${MONTHS[m-1].toLowerCase()} · ${r.time}`:`${r.date.slice(-2)} de ${MONTHS[m-1].toLowerCase()}`}));
   items.sort((a,b)=>a.day-b.day);

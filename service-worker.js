@@ -1,4 +1,4 @@
-const CACHE = "celam-v45-icono-santo-ruta-corregida";
+const CACHE = "celam-v46-icono-santo-asset-incluido";
 
 const FILES = [
   "./",
