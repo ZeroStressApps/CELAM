@@ -1,4 +1,4 @@
-const CACHE = "celam-v40-restyling-movil";
+const CACHE = "celam-v41-hoy-legibilidad-anio";
 
 const FILES = [
   "./",

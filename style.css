@@ -993,3 +993,42 @@ body.celam-locked .topbar, body.celam-locked .user-bar, body.celam-locked .tabs,
     font-size:10px;
   }
 }
+
+
+/* ===== Mejora de lectura y celebraciones del día ===== */
+.today-celebrations{margin:4px 0 16px;padding:18px 20px;background:linear-gradient(135deg,#EAF3ED,#F9F5EC);border:1px solid #D6E5DA;border-radius:22px;box-shadow:var(--shadow)}
+.today-celebrations-heading{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.today-celebrations-heading h2{font-family:"Playfair Display",serif;font-size:25px;line-height:1.2;margin:0;color:#2F4037}
+.today-celebrations-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}
+.today-celebration-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#FFFCF5;border-radius:15px;border-left:4px solid var(--sage-dark)}
+.today-celebration-item.birthday{border-left-color:#C77C50}
+.today-celebration-icon{font-size:27px;flex:0 0 32px;text-align:center}
+.today-celebration-item strong,.today-celebration-item span{display:block}
+.today-celebration-item strong{font-size:17px;color:#293A31}
+.today-celebration-item div span{font-size:14px;color:#53665B;margin-top:2px}
+.today-celebrations-empty{margin:0;font-size:16px;color:#53665B}
+.field-help{display:block;color:#59675F;font-size:12px;font-weight:500;margin-top:-7px}
+/* El texto de los eventos debe seguir siendo legible incluso en pantallas estrechas. */
+.event-pill{font-size:10px;font-weight:600;line-height:1.25;color:#293A31;white-space:normal;overflow-wrap:anywhere;text-overflow:clip}
+.event-pill.birthday{background:#FBE6D7;color:#75452F}
+.event-pill.saint{background:#E1EEE5;color:#355C43}
+.event-pill.reminder{background:#EAE1F8;color:#51416A}
+.event-item strong{font-size:16px;color:#293A31}
+.event-item span{font-size:14px;color:#53665B}
+@media(max-width:720px){
+  .today-celebrations{padding:15px 14px;margin:0 0 13px;border-radius:18px}
+  .today-celebrations-heading{gap:8px;margin-bottom:10px}
+  .today-celebrations-heading h2{font-size:22px}
+  .today-celebrations-list{grid-template-columns:1fr;gap:8px}
+  .today-celebration-item{padding:11px 12px}
+  .today-celebration-item strong{font-size:17px}
+  .today-celebration-item div span{font-size:14px}
+  .day{min-height:68px}
+  .day-number{font-size:13px;color:#25372E}
+  .event-pill{font-size:9px;line-height:1.2;padding:3px 4px;border-radius:6px}
+  .weekdays{font-size:12px;color:#42584B}
+  .event-item strong{font-size:15px}
+  .event-item span{font-size:13px;color:#53665B}
+  #reminderTime{font-size:16px;letter-spacing:.04em}
+  .field-help{font-size:13px}
+}

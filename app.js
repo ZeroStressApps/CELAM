@@ -166,10 +166,10 @@ function nextAnnualDate(p,type,from=new Date()){
   return d;
 }
 function render(){
-  if(viewDate.getFullYear()!==data.year)viewDate=new Date(data.year,Math.min(viewDate.getMonth(),11),1);
-  $("#yearTitle").textContent=data.year;
+  $("#yearTitle").textContent=viewDate.getFullYear();
   $("#themeTitle").textContent=data.theme;
   $("#monthTitle").textContent=MONTHS[viewDate.getMonth()];
+  renderTodayCelebrations();
   renderCalendar();renderMonthEvents();renderNextBirthday();renderNextReminder();
   renderContacts();renderReminders();renderCalendarSearch("");
   checkDueReminders();
@@ -187,6 +187,17 @@ function eventsFor(y,m,d){
   });
   return out;
 }
+
+function renderTodayCelebrations(){
+  const now=new Date(),items=eventsFor(now.getFullYear(),now.getMonth()+1,now.getDate())
+    .filter(e=>e.type==="birthday"||e.type==="saint");
+  const list=$("#todayCelebrationsList");
+  if(!list)return;
+  const dateLabel=new Intl.DateTimeFormat("es-ES",{day:"numeric",month:"long"}).format(now);
+  $("#todayCelebrationsTitle").textContent=`Hoy celebramos... · ${dateLabel}`;
+  list.innerHTML=items.length?items.map(e=>`<article class="today-celebration-item ${e.type}"><span class="today-celebration-icon" aria-hidden="true">${e.type==="birthday"?"🎂":"🌿"}</span><div><strong>${esc(e.title.replace(/^🎂 |^🌿 /,""))}</strong><span>${e.type==="birthday"?"Cumpleaños":"Santo"}</span></div></article>`).join(""):`<p class="today-celebrations-empty">Hoy no hay cumpleaños ni santos.</p>`;
+}
+
 function renderCalendar(){
   const grid=$("#calendarGrid");grid.innerHTML="";
   const y=viewDate.getFullYear(),m=viewDate.getMonth(),first=new Date(y,m,1),start=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate(),prev=new Date(y,m,0).getDate();
@@ -196,7 +207,7 @@ function renderCalendar(){
     else if(offset>days){dn=offset-days;cm=m+1;if(cm>11){cm=0;cy++}}
     const cell=document.createElement("div");cell.className="day"+(cm!==m?" other-month":"");
     const now=new Date();
-    if(cy===now.getFullYear()&&cm===now.getMonth()&&dn===now.getDate()&&cy===data.year)cell.classList.add("today");
+    if(cy===now.getFullYear()&&cm===now.getMonth()&&dn===now.getDate())cell.classList.add("today");
     cell.innerHTML=`<div class="day-number">${dn}</div><div class="day-events"></div>`;
     const wrap=cell.querySelector(".day-events"),events=eventsFor(cy,cm+1,dn);
     events.slice(0,3).forEach(e=>{const p=document.createElement("div");p.className=`event-pill ${e.type}`;p.textContent=e.title;wrap.appendChild(p)});
@@ -507,7 +518,7 @@ window.switchView=switchView;
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>switchView(t.dataset.view));
 $("#prevMonth").onclick=()=>{viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth()-1,1);render()};
 $("#nextMonth").onclick=()=>{viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth()+1,1);render()};
-function goToday(){viewDate=new Date(data.year,new Date().getFullYear()===data.year?new Date().getMonth():0,1);switchView("calendar");render();window.scrollTo({top:0,behavior:"smooth"})}
+function goToday(){viewDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);switchView("calendar");render();window.scrollTo({top:0,behavior:"smooth"})}
 $("#todayBtn").onclick=goToday;$("#monthToday").onclick=goToday;
 
 $("#calendarSearch")?.addEventListener("input",e=>renderCalendarSearch(e.target.value));
@@ -524,16 +535,23 @@ $("#reminderForm")?.addEventListener("submit",e=>{
   const i=Number($("#reminderPerson").value),p=data.people[i],type=$("#reminderType").value;
   if(!p)return;
   const d=$("#reminderDate").value;
+  const time=$("#reminderTime").value.trim();
+  if(time&&!/^([01]?\d|2[0-3]):[0-5]\d$/.test(time)){
+    alert("Introduce la hora en formato 24 horas, por ejemplo 11:00.");
+    $("#reminderTime").focus();
+    return;
+  }
+  const normalizedTime=time?time.padStart(5,"0"):"";
   const title=`${p.name} · ${type==="birthday"?"cumpleaños":"santo"}`;
   if(EDITING_REMINDER_ID){
     const r=data.reminders.find(x=>x.id===EDITING_REMINDER_ID);
     if(r){
-      r.title=title; r.date=d; r.time=$("#reminderTime").value; r.note=$("#reminderNote").value.trim(); r.type=type;
+      r.title=title; r.date=d; r.time=normalizedTime; r.note=$("#reminderNote").value.trim(); r.type=type;
     }
   }else{
     data.reminders.push({
       id:`${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      title,date:d,time:$("#reminderTime").value,note:$("#reminderNote").value.trim(),done:false,type
+      title,date:d,time,note:$("#reminderNote").value.trim(),done:false,type
     });
   }
   saveReminders().finally(()=>{ EDITING_REMINDER_ID=""; $("#reminderDialog").close(); render(); });

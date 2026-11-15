@@ -89,7 +89,15 @@
 
   <main>
     <section id="calendarView" class="view active">
- 
+
+      <section class="today-celebrations" aria-live="polite" aria-labelledby="todayCelebrationsTitle">
+        <div class="today-celebrations-heading">
+          <span class="eyebrow">HOY</span>
+          <h2 id="todayCelebrationsTitle">Hoy celebramos...</h2>
+        </div>
+        <div id="todayCelebrationsList" class="today-celebrations-list"></div>
+      </section>
+
       <section class="quick-grid">
         <article class="info-card birthday-card">
           <div class="card-icon">🎂</div>
@@ -293,7 +301,8 @@
         <input id="reminderDate" type="date" required>
       </label>
       <label>Hora (opcional)
-        <input id="reminderTime" type="time">
+        <input id="reminderTime" type="text" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="HH:MM" pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$" aria-describedby="reminderTimeHelp">
+        <small id="reminderTimeHelp" class="field-help">Formato de 24 horas, por ejemplo 11:00.</small>
       </label>
       <label>Nota (opcional)
         <input id="reminderNote" type="text" placeholder="Ej. Llamar por la tarde">
@@ -331,7 +340,7 @@
     </div>
   </dialog>
 
-  <footer><span>CELAM</span><span>Tus datos personales se sincronizan con tu cuenta</span></footer>
+  <footer><span>CELAM</span></footer>
 </div>
 
 <script src="data.js"></script>
