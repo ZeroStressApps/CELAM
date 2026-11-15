@@ -1,4 +1,4 @@
-const CACHE = "celam-v41-hoy-legibilidad-anio";
+const CACHE = "celam-v44-santos-solo-nombre";
 
 const FILES = [
   "./",
@@ -9,7 +9,8 @@ const FILES = [
   "./auth.js",
   "./manifest.webmanifest",
   "./assets/celam-logo.png",
-  "./assets/familia-miron-ortega.png"
+  "./assets/familia-miron-ortega.png",
+  "./assets/santo-angel.png"
 ];
 
 self.addEventListener("install", event => {

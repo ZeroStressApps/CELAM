@@ -180,7 +180,7 @@ function eventsFor(y,m,d){
     const b=birthdayDate(p,y);
     if(b&&b.getMonth()+1===m&&b.getDate()===d)out.push({type:"birthday",title:"🎂 "+p.name});
     const s=saintDateFor(p,y);
-    if(s&&s.getMonth()+1===m&&s.getDate()===d)out.push({type:"saint",title:"🌿 "+p.name+" · santo"});
+    if(s&&s.getMonth()+1===m&&s.getDate()===d)out.push({type:"saint",title:p.name});
   });
   data.reminders.forEach(r=>{
     if(r.date===dateKey(y,m,d)&&!r.done)out.push({type:"reminder",title:"🔔 "+r.title});
@@ -193,9 +193,8 @@ function renderTodayCelebrations(){
     .filter(e=>e.type==="birthday"||e.type==="saint");
   const list=$("#todayCelebrationsList");
   if(!list)return;
-  const dateLabel=new Intl.DateTimeFormat("es-ES",{day:"numeric",month:"long"}).format(now);
-  $("#todayCelebrationsTitle").textContent=`Hoy celebramos... · ${dateLabel}`;
-  list.innerHTML=items.length?items.map(e=>`<article class="today-celebration-item ${e.type}"><span class="today-celebration-icon" aria-hidden="true">${e.type==="birthday"?"🎂":"🌿"}</span><div><strong>${esc(e.title.replace(/^🎂 |^🌿 /,""))}</strong><span>${e.type==="birthday"?"Cumpleaños":"Santo"}</span></div></article>`).join(""):`<p class="today-celebrations-empty">Hoy no hay cumpleaños ni santos.</p>`;
+  $("#todayCelebrationsTitle").textContent="Hoy celebramos...";
+  list.innerHTML=items.length?items.map(e=>`<article class="today-celebration-item ${e.type}"><span class="today-celebration-icon" aria-hidden="true">${e.type==="birthday"?"🎂":"<img src='assets/santo-angel.png' alt=''>"}</span><div><strong>${esc(e.title.replace(/^🎂 /,""))}</strong><span>${e.type==="birthday"?"Cumpleaños":"Santo"}</span></div></article>`).join(""):`<p class="today-celebrations-empty">Hoy no hay cumpleaños ni santos.</p>`;
 }
 
 function renderCalendar(){
@@ -210,7 +209,7 @@ function renderCalendar(){
     if(cy===now.getFullYear()&&cm===now.getMonth()&&dn===now.getDate())cell.classList.add("today");
     cell.innerHTML=`<div class="day-number">${dn}</div><div class="day-events"></div>`;
     const wrap=cell.querySelector(".day-events"),events=eventsFor(cy,cm+1,dn);
-    events.slice(0,3).forEach(e=>{const p=document.createElement("div");p.className=`event-pill ${e.type}`;p.textContent=e.title;wrap.appendChild(p)});
+    events.slice(0,3).forEach(e=>{const p=document.createElement("div");p.className=`event-pill ${e.type}`;if(e.type==="saint")p.innerHTML=`<img class="saint-inline-icon" src="assets/santo-angel.png" alt=""> ${esc(e.title)}`;else p.textContent=e.title;wrap.appendChild(p)});
     if(events.length>3){const p=document.createElement("div");p.className="event-pill more";p.textContent=`+${events.length-3} más`;wrap.appendChild(p)}
     grid.appendChild(cell);
   }
@@ -221,12 +220,12 @@ function renderMonthEvents(){
     const d=birthdayDate(p,y);
     if(d&&d.getMonth()+1===m)items.push({day:d.getDate(),icon:"🎂",title:p.name,detail:`Cumpleaños`});
     const s=saintDateFor(p,y);
-    if(s&&s.getMonth()+1===m)items.push({day:s.getDate(),icon:"🌿",title:`Santo de ${p.name}`,detail:`${s.getDate()} de ${MONTHS[m-1].toLowerCase()}`});
+    if(s&&s.getMonth()+1===m)items.push({day:s.getDate(),icon:"saint",title:p.name,detail:`Santo · ${s.getDate()} de ${MONTHS[m-1].toLowerCase()}`});
   });
   data.reminders.filter(r=>!r.done&&r.date.startsWith(`${y}-${String(m).padStart(2,"0")}-`)).forEach(r=>items.push({day:Number(r.date.slice(-2)),icon:"🔔",title:r.title,detail:r.time?`${r.date.slice(-2)} de ${MONTHS[m-1].toLowerCase()} · ${r.time}`:`${r.date.slice(-2)} de ${MONTHS[m-1].toLowerCase()}`}));
   items.sort((a,b)=>a.day-b.day);
   $("#detailTitle").textContent=items.length?`Fechas importantes de ${MONTHS[m-1].toLowerCase()}`:"Fechas importantes";
-  $("#monthEvents").innerHTML=items.length?items.map(i=>`<div class="event-item"><div class="event-date">${i.icon}<br>${i.day}</div><div><strong>${esc(i.title)}</strong><span>${esc(i.detail)}</span></div></div>`).join(""):`<div class="empty">Todavía no hay fechas configuradas para este mes.</div>`;
+  $("#monthEvents").innerHTML=items.length?items.map(i=>`<div class="event-item"><div class="event-date">${i.icon==="saint"?`<img src="assets/santo-angel.png" alt="">`:i.icon}<br>${i.day}</div><div><strong>${esc(i.title)}</strong><span>${esc(i.detail)}</span></div></div>`).join(""):`<div class="empty">Todavía no hay fechas configuradas para este mes.</div>`;
 }
 function renderNextBirthday(){
   const today=new Date(),c=[];
@@ -320,7 +319,7 @@ function renderContacts(){
               : ""}
 
             ${p.saint
-              ? `<br>🌿 Santo: ${esc(p.saint)}`
+              ? `<br><img class="saint-inline-icon" src="assets/santo-angel.png" alt=""> Santo: ${esc(p.saint)}`
               : ""}
 
             ${addressHtml}
@@ -388,10 +387,10 @@ function renderCalendarSearch(query){
     if(!name.includes(q))return;
     const b=birthdayDate(p,data.year),s=saintDateFor(p,data.year);
     if(b)results.push({index,type:"birthday",icon:"🎂",label:"Cumpleaños",day:b.getDate(),month:b.getMonth(),person:p});
-    if(s)results.push({index,type:"saint",icon:"🌿",label:"Santo",day:s.getDate(),month:s.getMonth(),person:p});
+    if(s)results.push({index,type:"saint",icon:"saint",label:"Santo",day:s.getDate(),month:s.getMonth(),person:p});
   });
   if(!results.length){c.innerHTML=`<div class="empty">No hemos encontrado a nadie con ese nombre.</div>`;return}
-  c.innerHTML=results.map(r=>`<button class="search-result" data-search-person="${r.index}" data-search-month="${r.month}"><span>${r.icon}</span><div><strong>${esc(r.person.name)}</strong><small>${r.label}: ${r.day} de ${MONTHS[r.month].toLowerCase()}</small></div></button>`).join("");
+  c.innerHTML=results.map(r=>`<button class="search-result" data-search-person="${r.index}" data-search-month="${r.month}"><span>${r.icon==="saint"?`<img class="saint-search-icon" src="assets/santo-angel.png" alt="">`:r.icon}</span><div><strong>${esc(r.person.name)}</strong><small>${r.label}: ${r.day} de ${MONTHS[r.month].toLowerCase()}</small></div></button>`).join("");
   c.querySelectorAll("[data-search-person]").forEach(b=>b.onclick=()=>{
     viewDate=new Date(data.year,Number(b.dataset.searchMonth),1);
     render();

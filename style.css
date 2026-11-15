@@ -1032,3 +1032,10 @@ body.celam-locked .topbar, body.celam-locked .user-bar, body.celam-locked .tabs,
   #reminderTime{font-size:16px;letter-spacing:.04em}
   .field-help{font-size:13px}
 }
+
+/* Icono ilustrado de santo */
+.today-celebration-icon img{width:34px;height:34px;object-fit:contain;display:block;border-radius:9px}
+.event-date img{width:25px;height:25px;object-fit:contain;display:inline-block;vertical-align:middle;border-radius:6px}
+.saint-inline-icon{width:16px;height:16px;object-fit:contain;vertical-align:-3px;border-radius:4px}
+.search-result .saint-search-icon{width:25px;height:25px;object-fit:contain;display:block;border-radius:6px}
+.event-pill .saint-inline-icon{width:13px;height:13px;vertical-align:-2px}
