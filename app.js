@@ -1,4 +1,11 @@
 const MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DAILY_CELEBRATION_PHRASES=["La vida, que ya es bastante motivo.", "Los pequeños momentos que nos hacen felices.", "Que estamos aquí y podemos compartir.", "Los días tranquilos y las buenas noticias.", "Las nuevas oportunidades que trae cada mañana.", "Las cosas sencillas que hacen grande la vida.", "Las ganas de seguir sumando momentos.", "Todo lo bueno que todavía está por llegar.", "Los ratos en familia, aunque a veces sean un caos.", "Las sobremesas que nunca tienen fin.", "Las risas que compartimos juntos.", "Los abrazos que siempre llegan a tiempo.", "Tener personas con las que contar.", "Las reuniones familiares y las historias de siempre.", "Los recuerdos que seguimos construyendo.", "Estar cerca, aunque a veces estemos lejos.", "Las buenas pelis y las mejores series.", "Un café sin prisas.", "Los domingos de sofá, peli y manta.", "Una buena comida en buena compañía.", "Las canciones que nos sabemos de memoria.", "Los viajes que soñamos y los que ya vivimos.", "Los paseos sin rumbo y las conversaciones inesperadas.", "Los días de sol y las tardes junto al mar.", "Las tonterías que nos hacen reír.", "Las anécdotas que nunca nos cansamos de contar.", "Las locuras familiares que algún día serán leyenda.", "Reírnos de nosotros mismos.", "Los planes improvisados que salen mejor de lo esperado.", "Que todavía nos queden tantas cosas por hacer.", "Los nuevos comienzos.", "Los sueños que siguen pendientes.", "Las segundas oportunidades.", "La gente bonita que se cruza en nuestro camino.", "Los proyectos que nos ilusionan.", "La capacidad de volver a empezar.", "Las sorpresas que todavía no conocemos.", "Que hoy es hoy y hay que aprovecharlo.", "Que siempre hay algo bueno que brindar.", "¡Que estamos vivos y eso ya merece una celebración!"];
+
+function dailyCelebrationPhrase(date=new Date()){
+  const dayNumber=Math.floor(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())/86400000);
+  const index=((dayNumber%DAILY_CELEBRATION_PHRASES.length)+DAILY_CELEBRATION_PHRASES.length)%DAILY_CELEBRATION_PHRASES.length;
+  return DAILY_CELEBRATION_PHRASES[index];
+}
 const REMINDERS_KEY="celam-personal-reminders-v1";
 const POPUP_KEY="celam-shown-reminders-v1";
 const REMINDERS_COLLECTION="reminders";
@@ -194,7 +201,7 @@ function renderTodayCelebrations(){
   const list=$("#todayCelebrationsList");
   if(!list)return;
   $("#todayCelebrationsTitle").textContent="Hoy celebramos...";
-  list.innerHTML=items.length?items.map(e=>`<article class="today-celebration-item ${e.type}"><span class="today-celebration-icon" aria-hidden="true">${e.type==="birthday"?"🎂":"😇"}</span><div><strong>${esc(e.title.replace(/^🎂 /,""))}</strong><span>${e.type==="birthday"?"Cumpleaños":""}</span></div></article>`).join(""):`<p class="today-celebrations-empty">Hoy no hay cumpleaños ni santos.</p>`;
+  list.innerHTML=items.length?items.map(e=>`<article class="today-celebration-item ${e.type}"><span class="today-celebration-icon" aria-hidden="true">${e.type==="birthday"?"🎂":"😇"}</span><div><strong>${esc(e.title.replace(/^🎂 /,""))}</strong><span>${e.type==="birthday"?"Cumpleaños":""}</span></div></article>`).join(""):`<p class="today-celebrations-empty">${esc(dailyCelebrationPhrase(now))}</p>`;
 }
 
 function renderCalendar(){

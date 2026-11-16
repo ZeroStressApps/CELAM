@@ -1,4 +1,4 @@
-const CACHE = "celam-v47-santo-emoji-inline";
+const CACHE = "celam-v48-frases-celebracion-diarias";
 
 const FILES = [
   "./",
