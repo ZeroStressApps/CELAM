@@ -1,4 +1,4 @@
-const CACHE = "celam-v49-proxima-celebracion";
+const CACHE = "celam-v50-hora-recordatorios-movil";
 
 const FILES = [
   "./",

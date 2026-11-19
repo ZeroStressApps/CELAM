@@ -562,9 +562,11 @@ $("#reminderForm")?.addEventListener("submit",e=>{
   const i=Number($("#reminderPerson").value),p=data.people[i],type=$("#reminderType").value;
   if(!p)return;
   const d=$("#reminderDate").value;
-  const time=$("#reminderTime").value.trim();
+  const rawTime=$("#reminderTime").value.trim();
+  // Acepta los separadores que suelen ofrecer los teclados móviles y los normaliza a HH:MM.
+  const time=rawTime.replace(/[.,]/g,":");
   if(time&&!/^([01]?\d|2[0-3]):[0-5]\d$/.test(time)){
-    alert("Introduce la hora en formato 24 horas, por ejemplo 11:00.");
+    alert("Introduce la hora en formato de 24 horas, por ejemplo 11:00 o 11.00.");
     $("#reminderTime").focus();
     return;
   }
@@ -578,7 +580,7 @@ $("#reminderForm")?.addEventListener("submit",e=>{
   }else{
     data.reminders.push({
       id:`${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      title,date:d,time,note:$("#reminderNote").value.trim(),done:false,type
+      title,date:d,time:normalizedTime,note:$("#reminderNote").value.trim(),done:false,type
     });
   }
   saveReminders().finally(()=>{ EDITING_REMINDER_ID=""; $("#reminderDialog").close(); render(); });
