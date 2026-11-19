@@ -450,8 +450,10 @@ function renderReminders(){
 let reminderPeopleOptions=[];
 function populateReminderPeople(){
   const select=$("#reminderPerson");if(!select)return;
+  const excludedFromCongratulations=new Set(["modesto","pilar"]);
   reminderPeopleOptions=data.people
     .map((p,i)=>({p,i}))
+    .filter(({p})=>!excludedFromCongratulations.has(String(p.name||"").trim().toLocaleLowerCase("es")))
     .sort((a,b)=>{
       const aConDios=/\\bcon\\s+dios\\b/i.test(String(a.p.address||""));
       const bConDios=/\\bcon\\s+dios\\b/i.test(String(b.p.address||""));
