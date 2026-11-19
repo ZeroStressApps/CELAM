@@ -235,11 +235,32 @@ function renderMonthEvents(){
   $("#monthEvents").innerHTML=items.length?items.map(i=>`<div class="event-item"><div class="event-date">${i.icon==="saint"?"😇":i.icon}<br>${i.day}</div><div><strong>${esc(i.title)}</strong><span>${esc(i.detail)}</span></div></div>`).join(""):`<div class="empty">Todavía no hay fechas configuradas para este mes.</div>`;
 }
 function renderNextBirthday(){
-  const today=new Date(),c=[];
-  data.people.forEach(p=>{const d=nextAnnualDate(p,"birthday",today);if(d)c.push({p,d})});
-  c.sort((a,b)=>a.d-b.d);const n=c[0];
-  $("#nextBirthdayName").textContent=n?n.p.name:"No hay cumpleaños";
-  $("#nextBirthdayDate").textContent=n?`🎂 ${n.d.getDate()} de ${MONTHS[n.d.getMonth()].toLowerCase()}`:"";
+  const today=new Date();
+  const fromTomorrow=new Date(today.getFullYear(),today.getMonth(),today.getDate()+1);
+  const candidates=[];
+  data.people.forEach(p=>{
+    const birthday=nextAnnualDate(p,"birthday",fromTomorrow);
+    const saint=nextAnnualDate(p,"saint",fromTomorrow);
+    if(birthday)candidates.push({person:p,date:birthday,type:"birthday"});
+    if(saint)candidates.push({person:p,date:saint,type:"saint"});
+  });
+  candidates.sort((a,b)=>a.date-b.date);
+  const next=candidates[0];
+  const nameEl=$("#nextBirthdayName");
+  const dateEl=$("#nextBirthdayDate");
+  const card=nameEl?.closest(".info-card");
+  if(card){
+    const icon=card.querySelector(".card-icon");
+    if(icon)icon.textContent=next?(next.type==="birthday"?"🎂":"😇"):"🎉";
+  }
+  if(!next){
+    nameEl.textContent="No hay próximas celebraciones";
+    dateEl.textContent="";
+    return;
+  }
+  const sameDay=candidates.filter(item=>item.date.getTime()===next.date.getTime());
+  nameEl.textContent=sameDay.map(item=>item.person.name).join(", ");
+  dateEl.textContent=`${next.type==="birthday"?"🎂":"😇"} ${next.date.getDate()} de ${MONTHS[next.date.getMonth()].toLowerCase()}`;
 }
 function renderNextReminder(){
   const now=Date.now(),rs=data.reminders.filter(r=>!r.done&&new Date(`${r.date}T${r.time||"23:59"}`).getTime()>=now).sort((a,b)=>new Date(`${a.date}T${a.time||"23:59"}`)-new Date(`${b.date}T${b.time||"23:59"}`)),r=rs[0];
