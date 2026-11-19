@@ -447,21 +447,30 @@ function renderReminders(){
   });
 }
 
+let reminderPeopleOptions=[];
 function populateReminderPeople(){
   const select=$("#reminderPerson");if(!select)return;
-
-  const orderedPeople=data.people
+  reminderPeopleOptions=data.people
     .map((p,i)=>({p,i}))
     .sort((a,b)=>{
-      const aConDios=/\bcon\s+dios\b/i.test(String(a.p.address||""));
-      const bConDios=/\bcon\s+dios\b/i.test(String(b.p.address||""));
+      const aConDios=/\\bcon\\s+dios\\b/i.test(String(a.p.address||""));
+      const bConDios=/\\bcon\\s+dios\\b/i.test(String(b.p.address||""));
       return Number(aConDios)-Number(bConDios);
     });
-
-  select.innerHTML=orderedPeople
+  $("#reminderPersonSearch").value="";
+  filterReminderPeople("");
+  updateReminderDate();
+}
+function filterReminderPeople(query){
+  const select=$("#reminderPerson");if(!select)return;
+  const previous=select.value;
+  const q=String(query||"").trim().toLocaleLowerCase("es");
+  const matches=reminderPeopleOptions.filter(({p})=>p.name.toLocaleLowerCase("es").includes(q));
+  select.innerHTML=matches
     .map(({p,i})=>`<option value="${i}">${esc(p.name)}</option>`)
     .join("");
-
+  if(matches.some(({i})=>String(i)===previous)) select.value=previous;
+  else if(matches.length) select.value=String(matches[0].i);
   updateReminderDate();
 }
 function updateReminderDate(){
@@ -485,7 +494,12 @@ function openReminder(reminder=null){
       const expected=`${p.name} · ${reminder.type==="saint"?"santo":"cumpleaños"}`;
       return expected===reminder.title;
     });
-    if(personIndex>=0) $("#reminderPerson").value=String(personIndex);
+    if(personIndex>=0){
+      $("#reminderPerson").value=String(personIndex);
+      $("#reminderPersonSearch").value=data.people[personIndex].name;
+      filterReminderPeople(data.people[personIndex].name);
+      $("#reminderPerson").value=String(personIndex);
+    }
     if($("#reminderType")) $("#reminderType").value=reminder.type||"birthday";
     if($("#reminderDate")) $("#reminderDate").value=reminder.date||"";
     if($("#reminderTime")) $("#reminderTime").value=reminder.time||"";
@@ -555,6 +569,7 @@ $("#addReminder")?.addEventListener("click",openReminder);
 $("#closeReminder")?.addEventListener("click",()=>$("#reminderDialog").close());
 $("#cancelReminder")?.addEventListener("click",()=>$("#reminderDialog").close());
 $("#reminderPerson")?.addEventListener("change",updateReminderDate);
+$("#reminderPersonSearch")?.addEventListener("input",e=>filterReminderPeople(e.target.value));
 $("#reminderType")?.addEventListener("change",updateReminderDate);
 $("#reminderForm")?.addEventListener("submit",e=>{
   e.preventDefault();
