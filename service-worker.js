@@ -1,4 +1,4 @@
-const CACHE = "celam-v52-excluir-fallecidos-recordatorios";
+const CACHE = "celam-v53-nombre-jose-arbol";
 
 const FILES = [
   "./",
